@@ -1,16 +1,17 @@
-import admin from 'firebase-admin';
+import { applicationDefault, getApps, initializeApp } from 'firebase-admin/app';
+import { getMessaging } from 'firebase-admin/messaging';
 import { query } from '../db/pool.js';
 import { logger } from '../utils/logger.js';
 
-if (!admin.apps.length && process.env.FIREBASE_SERVICE_ACCOUNT_JSON) {
-  admin.initializeApp({ credential: admin.applicationDefault() });
+if (!getApps().length && process.env.FIREBASE_SERVICE_ACCOUNT_JSON) {
+  initializeApp({ credential: applicationDefault() });
 }
 
 async function push(userId, notification, data = {}) {
   const { rows } = await query('SELECT fcm_token FROM devices WHERE user_id = $1', [userId]);
   if (!rows.length) return;
   try {
-    await admin.messaging().sendEachForMulticast({
+    await getMessaging().sendEachForMulticast({
       tokens: rows.map((r) => r.fcm_token),
       notification,
       data: Object.fromEntries(Object.entries(data).map(([k, v]) => [k, String(v)])),

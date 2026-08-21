@@ -1,16 +1,18 @@
-import admin from 'firebase-admin';
+import { applicationDefault, getApps, initializeApp } from 'firebase-admin/app';
+import { getDatabase } from 'firebase-admin/database';
+import { getAuth } from 'firebase-admin/auth';
 import { query } from '../db/pool.js';
 import { config } from '../config/index.js';
 import { logger } from '../utils/logger.js';
 
-if (!admin.apps.length && process.env.FIREBASE_SERVICE_ACCOUNT_JSON) {
-  admin.initializeApp({
-    credential: admin.applicationDefault(),
+if (!getApps().length && process.env.FIREBASE_SERVICE_ACCOUNT_JSON) {
+  initializeApp({
+    credential: applicationDefault(),
     databaseURL: process.env.FIREBASE_DATABASE_URL,
   });
 }
 
-const db = () => admin.database();
+const db = () => getDatabase();
 
 /**
  * The bridge between Postgres (source of truth) and Firebase (transport for
@@ -63,7 +65,7 @@ export class RealtimeService {
    * identity system with its own signup path.
    */
   static async mintToken(userId, role) {
-    return admin.auth().createCustomToken(userId, { role, iss: 'sparkle-api' });
+    return getAuth().createCustomToken(userId, { role, iss: 'sparkle-api' });
   }
 
   /**
