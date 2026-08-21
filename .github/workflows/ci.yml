@@ -1,0 +1,120 @@
+name: CI
+
+on:
+  push: { branches: [main] }
+  pull_request:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  # Fast gate: pure domain math, no services. Runs in seconds, so a broken
+  # pricing rule fails the PR before anything expensive starts.
+  unit:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: '20', cache: npm, cache-dependency-path: backend/package.json }
+      - run: npm install --prefix backend --no-audit --no-fund
+      - run: npm test --prefix backend
+
+  # Migrations are executable documentation, so execute them. This job catches
+  # DDL that was only ever read: a missing extension, a constraint that
+  # references a column added later, a trigger on a table that doesn't exist —
+  # and proves `migrate up` runs clean from an empty database.
+  schema:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgis/postgis:16-3.4
+        env:
+          POSTGRES_USER: sparkle
+          POSTGRES_PASSWORD: sparkle
+          POSTGRES_DB: sparkle_ci
+        ports: ['5432:5432']
+        options: >-
+          --health-cmd "pg_isready -U sparkle -d sparkle_ci"
+          --health-interval 5s --health-timeout 5s --health-retries 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: '20', cache: npm, cache-dependency-path: backend/package.json }
+      - name: Run migrations
+        env:
+          DATABASE_URL: postgres://sparkle:sparkle@localhost:5432/sparkle_ci
+        run: |
+          npm install --prefix backend --no-audit --no-fund
+          npm run migrate:up --prefix backend
+      - name: Seed, then verify the money invariants hold
+        env:
+          PGPASSWORD: sparkle
+          DATABASE_URL: postgres://sparkle:sparkle@localhost:5432/sparkle_ci
+        run: |
+          node backend/scripts/seed.js
+          BAD=$(psql -h localhost -U sparkle -d sparkle_ci -tAc "
+            SELECT COUNT(*) FROM bookings
+             WHERE total_cents <> subtotal_cents + ts_fee_cents + tax_cents
+                OR subtotal_cents <> commission_cents + payout_cents")
+          echo "bookings failing the money invariants: $BAD"
+          test "$BAD" = "0"
+
+      # Proves the geospatial path actually plans and runs against real
+      # PostGIS. The matching query is the one place a missing extension or a
+      # geography/geometry mixup hides until a customer is waiting.
+      - name: Exercise the matching filters
+        env: { PGPASSWORD: sparkle }
+        run: |
+          psql -h localhost -U sparkle -d sparkle_ci -v ON_ERROR_STOP=1 -c "
+            SELECT c.user_id, ST_Distance(c.home_location, a.location) / 1000 AS km
+              FROM cleaner_profiles c
+              CROSS JOIN (SELECT location FROM addresses LIMIT 1) a
+             WHERE ST_DWithin(c.home_location, a.location, c.service_radius_km * 1000)
+             ORDER BY km LIMIT 5;"
+
+  # The booking state machine against real PostGIS: the concurrent-accept race,
+  # the transition map, the no_double_booking exclusion, geofencing, and the
+  # photo gate. Kept separate from `unit` because it needs a database; no Redis,
+  # Firebase, or Stripe — the tests stub those and assert only paths that reject
+  # before money moves.
+  integration:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgis/postgis:16-3.4
+        env:
+          POSTGRES_USER: sparkle
+          POSTGRES_PASSWORD: sparkle
+          POSTGRES_DB: sparkle_ci
+        ports: ['5432:5432']
+        options: >-
+          --health-cmd "pg_isready -U sparkle -d sparkle_ci"
+          --health-interval 5s --health-timeout 5s --health-retries 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: '20', cache: npm, cache-dependency-path: backend/package.json }
+      - name: Run migrations
+        env:
+          DATABASE_URL: postgres://sparkle:sparkle@localhost:5432/sparkle_ci
+        run: |
+          npm install --prefix backend --no-audit --no-fund
+          npm run migrate:up --prefix backend
+      - name: Booking state-machine integration tests
+        env:
+          DATABASE_URL: postgres://sparkle:sparkle@localhost:5432/sparkle_ci
+        run: npm run test:integration --prefix backend
+
+  mobile:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix: { app: [cleaner_app, customer_app] }
+    steps:
+      - uses: actions/checkout@v4
+      - uses: subosito/flutter-action@v2
+        with: { channel: stable }
+      - run: flutter pub get
+        working-directory: mobile/${{ matrix.app }}
+      - run: flutter analyze
+        working-directory: mobile/${{ matrix.app }}

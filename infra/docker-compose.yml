@@ -1,0 +1,37 @@
+# Local dev stack. Postgres carries PostGIS because the matching engine's
+# hard filters are geospatial — a plain postgres image will fail on the first
+# ST_DWithin, and it's better to find that out now than in CI.
+services:
+  db:
+    image: postgis/postgis:16-3.4
+    environment:
+      POSTGRES_USER: sparkle
+      POSTGRES_PASSWORD: sparkle
+      POSTGRES_DB: sparkle
+    ports: ["5432:5432"]
+    volumes:
+      - sparkle_pg:/var/lib/postgresql/data
+      # Schema is owned by migrations now, not the container's first-boot hook:
+      # bring the db up, then `cd backend && npm run migrate:up`. The old init
+      # mount only ran on an empty volume and couldn't express a second change.
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U sparkle -d sparkle"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+  redis:
+    image: redis:7-alpine
+    command: ["redis-server", "--appendonly", "yes"]
+    ports: ["6379:6379"]
+    volumes:
+      - sparkle_redis:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+volumes:
+  sparkle_pg:
+  sparkle_redis:

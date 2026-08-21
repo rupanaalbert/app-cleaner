@@ -1,0 +1,45 @@
+{
+  "rules": {
+    "//": "Tracking and chat live in Firebase because a 10-second GPS write is a workload Express and Postgres are both bad at. The access index below is written ONLY by the backend service account on assignment — clients cannot grant themselves access to a booking.",
+
+    "booking_access": {
+      "$bookingId": {
+        ".read": "auth != null && (data.child('customer_id').val() === auth.uid || data.child('cleaner_id').val() === auth.uid)",
+        ".write": false
+      }
+    },
+
+    "tracking": {
+      "$bookingId": {
+        ".read": "auth != null && (root.child('booking_access').child($bookingId).child('customer_id').val() === auth.uid || root.child('booking_access').child($bookingId).child('cleaner_id').val() === auth.uid)",
+
+        ".write": "auth != null && root.child('booking_access').child($bookingId).child('cleaner_id').val() === auth.uid && root.child('booking_access').child($bookingId).child('status').val() === 'en_route'",
+
+        "lat": { ".validate": "newData.isNumber() && newData.val() >= -90 && newData.val() <= 90" },
+        "lng": { ".validate": "newData.isNumber() && newData.val() >= -180 && newData.val() <= 180" },
+        "heading": { ".validate": "newData.isNumber() && newData.val() >= 0 && newData.val() < 360" },
+        "accuracy_m": { ".validate": "newData.isNumber() && newData.val() >= 0" },
+        "eta_minutes": { ".validate": "newData.isNumber() && newData.val() >= 0 && newData.val() <= 240" },
+        "updated_at": { ".validate": "newData.isNumber() && newData.val() <= now + 5000" },
+        "$other": { ".validate": false }
+      }
+    },
+
+    "threads": {
+      "$bookingId": {
+        ".read": "auth != null && (root.child('booking_access').child($bookingId).child('customer_id').val() === auth.uid || root.child('booking_access').child($bookingId).child('cleaner_id').val() === auth.uid)",
+
+        "messages": {
+          "$messageId": {
+            ".write": "auth != null && !data.exists() && (root.child('booking_access').child($bookingId).child('customer_id').val() === auth.uid || root.child('booking_access').child($bookingId).child('cleaner_id').val() === auth.uid)",
+
+            "sender_id": { ".validate": "newData.val() === auth.uid" },
+            "body": { ".validate": "newData.isString() && newData.val().length > 0 && newData.val().length <= 1000" },
+            "sent_at": { ".validate": "newData.isNumber() && newData.val() <= now + 5000" },
+            "$other": { ".validate": false }
+          }
+        }
+      }
+    }
+  }
+}
