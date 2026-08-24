@@ -137,7 +137,7 @@ export const metrics = {
     'sparkle_time_to_match_seconds', 'Seconds from booking creation to match',
     [15, 30, 60, 120, 300, 600]),
   captureFailures: registry.counter(
-    'sparkle_payment_capture_failures_total', 'Stripe capture/transfer failures at completion'),
+    'sparkle_payment_capture_failures_total', 'Payment capture failures at completion'),
   webhookProcessed: registry.counter(
     'sparkle_webhook_processed_total', 'Webhook events processed, by provider and outcome'),
   webhookLag: registry.histogram(

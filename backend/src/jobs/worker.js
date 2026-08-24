@@ -1,11 +1,12 @@
 import http from 'node:http';
 import { Worker } from 'bullmq';
-import { connection, webhookQueue } from './queues.js';
+import { connection, webhookQueue, paymentQueue } from './queues.js';
 import { query } from '../db/pool.js';
 import { config } from '../config/index.js';
 import { MatchingService } from '../services/matching.service.js';
 import { RealtimeService } from '../services/realtime.service.js';
 import { WebhookService } from '../services/webhook.service.js';
+import { PaymentService } from '../services/payment.service.js';
 import { registry, CONTENT_TYPE } from '../observability/metrics.js';
 import { sweepStuckPendingMatch } from '../observability/alerts.js';
 import { logger } from '../utils/logger.js';
@@ -94,20 +95,37 @@ new Worker('privacy', async (job) => {
 }, { connection, concurrency: 2 });
 
 /**
- * Webhook replay. Retries Stripe events whose handler threw on delivery, with
+ * Webhook replay. Retries PayPal events whose handler threw on delivery, with
  * the backoff and poison-pill threshold enforced in the database. concurrency 1
  * because a single sweep already batches, and two would just contend for the
  * same SKIP LOCKED rows.
  */
 new Worker('webhooks', async (job) => {
-  if (job.name === 'replay_failed') return WebhookService.replayStripe();
+  if (job.name === 'replay_failed') return WebhookService.replayPaypal();
 }, { connection, concurrency: 1 });
 
 // Drive the sweep on a fixed cadence. A stable jobId keeps this to one
 // repeatable no matter how many times the worker restarts.
 await webhookQueue.add('replay_failed', {}, {
   repeat: { every: config.webhooks.replayIntervalSeconds * 1000 },
-  jobId: 'stripe-webhook-replay',
+  jobId: 'paypal-webhook-replay',
+});
+
+/**
+ * Payout disbursement. Sends every completed booking's payout once its hold
+ * window has passed — see payment.service.js's class comment for why this
+ * exists (PayPal has no reverse_transfer, so this window is what gives a
+ * refund a normal chance to land before the cleaner is ever paid).
+ * concurrency 1 for the same SKIP LOCKED reason as webhook replay would apply
+ * if this ever needs it — the sweep already batches per run.
+ */
+new Worker('payments', async (job) => {
+  if (job.name === 'disburse_pending') return PaymentService.disbursePendingPayouts();
+}, { connection, concurrency: 1 });
+
+await paymentQueue.add('disburse_pending', {}, {
+  repeat: { every: 15 * 60_000 }, // every 15 minutes — fine-grained enough that the hold window is the real gate
+  jobId: 'payout-disbursement-sweep',
 });
 
 // The worker records its own metrics (dispatch rounds, webhook replay lag, the

@@ -7,7 +7,7 @@ import {
 } from '../src/domain/pricing.math.js';
 
 /**
- * These cover the pure math only — no database, no Stripe. That's deliberate:
+ * These cover the pure math only — no database, no PayPal. That's deliberate:
  * pricing is where a rounding slip becomes a refund queue, and a test that
  * needs a live Postgres is a test nobody runs before pushing.
  */

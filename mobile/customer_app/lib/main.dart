@@ -96,9 +96,17 @@ class FakeBookingRepository implements BookingRepository {
   }
 
   @override
+  Future<PaypalOrder> createPaypalOrder(String quoteId) async {
+    await Future<void>.delayed(const Duration(milliseconds: 200));
+    // No real PayPal to redirect through in the demo build — see
+    // kDemoApprovedPaypalUrl's doc comment.
+    return PaypalOrder(orderId: 'order_fake_$quoteId', approveUrl: kDemoApprovedPaypalUrl);
+  }
+
+  @override
   Future<ConfirmedBooking> confirm({
     required String quoteId,
-    required String paymentMethodId,
+    required String paypalOrderId,
     required BookingDraft draft,
     required String idempotencyKey,
   }) async {

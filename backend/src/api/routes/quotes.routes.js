@@ -17,4 +17,6 @@ const createQuote = z.object({
 router.post('/', requireAuth, requireRole('customer'), quoteLimiter,
   validate(createQuote), QuoteController.create);
 
+router.post('/:id/paypal-order', requireAuth, requireRole('customer'), QuoteController.createPaypalOrder);
+
 export default router;

@@ -9,7 +9,7 @@
 //
 // External collaborators are neutralised, not exercised: Firebase fan-out
 // (RealtimeService) and the BullMQ enqueues are stubbed in `before`, and the
-// Redis socket queues.js opens at import is dropped immediately below. Stripe
+// Redis socket queues.js opens at import is dropped immediately below. PayPal
 // is never reached — every case here asserts a rejection that fires before the
 // capture/transfer path. The subject under test is the state machine.
 
@@ -49,8 +49,8 @@ async function makeCustomer({ lng = PROP.lng, lat = PROP.lat, beds = 2, baths = 
   );
   createdUserIds.push(u.id);
   await query(
-    `INSERT INTO customer_profiles (user_id, stripe_customer_id) VALUES ($1,$2)`,
-    [u.id, `cus_it_${u.id.slice(0, 8)}`],
+    `INSERT INTO customer_profiles (user_id) VALUES ($1)`,
+    [u.id],
   );
   const { rows: [a] } = await query(
     `INSERT INTO addresses (user_id, line1, city, region, postal_code, location)
@@ -75,12 +75,12 @@ async function makeCleaner({ lng = PROP.lng, lat = PROP.lat } = {}) {
   createdUserIds.push(u.id);
   await query(
     `INSERT INTO cleaner_profiles
-       (user_id, stripe_account_id, payouts_enabled, onboarding_status, bg_status,
+       (user_id, paypal_email, payouts_enabled, onboarding_status, bg_status,
         bg_completed_at, bg_expires_at, service_types, home_location,
         service_radius_km, is_available)
      VALUES ($1,$2,true,'approved','clear', now()-interval '10 days', now()+interval '300 days',
              '{standard,deep}', ST_SetSRID(ST_MakePoint($3,$4),4326)::geography, 25, true)`,
-    [u.id, `acct_it_${u.id.slice(0, 8)}`, lng, lat],
+    [u.id, `it-clnr-${u.id.slice(0, 8)}@example.com`, lng, lat],
   );
   return u.id;
 }

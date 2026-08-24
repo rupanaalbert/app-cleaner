@@ -1,10 +1,11 @@
-// Integration tests for Stripe webhook replay — BACKLOG.md item 3.
+// Integration tests for PayPal webhook replay — originally BACKLOG.md item 3
+// for Stripe, ported when Stripe Connect was replaced with PayPal.
 //
-// Exercises WebhookService.replayStripe against a real database: a due failure
+// Exercises WebhookService.replayPaypal against a real database: a due failure
 // gets reprocessed (and its side effect lands), a handler that throws again is
 // backed off and its attempt counted, and rows that are poison-pilled or not
 // yet due are left alone. Same harness as booking-state-machine.test.js —
-// needs a migrated Postgres, drops the eager Redis socket, no Stripe/Firebase.
+// needs a migrated Postgres, drops the eager Redis socket, no PayPal/Firebase.
 
 import '../helpers/env.js';
 
@@ -23,7 +24,7 @@ connection.disconnect();
 const createdUserIds = [];
 const createdEventIds = [];
 
-async function makeCleaner({ accountId, payoutsEnabled = false }) {
+async function makeCleaner({ payoutsEnabled = false }) {
   const { rows: [u] } = await query(
     `INSERT INTO users (role, email, full_name, status, email_verified_at)
      VALUES ('cleaner',$1,'IT Cleaner','active', now()) RETURNING id`,
@@ -31,22 +32,22 @@ async function makeCleaner({ accountId, payoutsEnabled = false }) {
   );
   createdUserIds.push(u.id);
   await query(
-    `INSERT INTO cleaner_profiles (user_id, stripe_account_id, payouts_enabled, onboarding_status, bg_status)
+    `INSERT INTO cleaner_profiles (user_id, paypal_email, payouts_enabled, onboarding_status, bg_status)
      VALUES ($1,$2,$3,'approved','clear')`,
-    [u.id, accountId, payoutsEnabled],
+    [u.id, `it-wh-${randomUUID()}@example.com`, payoutsEnabled],
   );
   return u.id;
 }
 
 // Insert a webhook_events row already in the failed state the replay sweep looks
 // for: unprocessed, with an error, and (by default) due.
-async function makeFailedEvent({ type, object, attempts = 0, dueInSeconds = -60, error = 'initial failure' }) {
+async function makeFailedEvent({ eventType, resource, attempts = 0, dueInSeconds = -60, error = 'initial failure' }) {
   const id = `evt_it_${randomUUID().replace(/-/g, '')}`;
   createdEventIds.push(id);
   await query(
     `INSERT INTO webhook_events (id, provider, event_type, payload, error, attempts, next_attempt_at)
-     VALUES ($1,'stripe',$2,$3,$4,$5, now() + ($6 || ' seconds')::interval)`,
-    [id, type, { id, type, data: { object } }, error, attempts, String(dueInSeconds)],
+     VALUES ($1,'paypal',$2,$3,$4,$5, now() + ($6 || ' seconds')::interval)`,
+    [id, eventType, { id, event_type: eventType, resource }, error, attempts, String(dueInSeconds)],
   );
   return id;
 }
@@ -59,7 +60,7 @@ before(async () => {
   } catch (err) {
     throw new Error(
       'Webhook replay tests need a migrated Postgres at DATABASE_URL '
-      + `(${process.env.DATABASE_URL}). Run \`npm run migrate:up\` first (0002 adds the replay columns). `
+      + `(${process.env.DATABASE_URL}). Run \`npm run migrate:up\` first. `
       + `Underlying: ${err.message}`,
     );
   }
@@ -77,14 +78,13 @@ after(async () => {
 });
 
 test('a due failure is replayed: handler re-runs, side effect lands, row is marked processed', async () => {
-  const accountId = `acct_it_${randomUUID().slice(0, 12)}`;
-  const cleanerId = await makeCleaner({ accountId, payoutsEnabled: false });
+  const cleanerId = await makeCleaner({ payoutsEnabled: false });
   const eventId = await makeFailedEvent({
-    type: 'account.updated',
-    object: { id: accountId, payouts_enabled: true, charges_enabled: true },
+    eventType: 'PAYMENT.PAYOUTS-ITEM.SUCCEEDED',
+    resource: { payout_item: { sender_item_id: `verify:${cleanerId}` } },
   });
 
-  const result = await WebhookService.replayStripe();
+  const result = await WebhookService.replayPaypal();
   assert.ok(result.ok >= 1, 'at least our event should have been processed');
 
   const row = await eventRow(eventId);
@@ -94,19 +94,19 @@ test('a due failure is replayed: handler re-runs, side effect lands, row is mark
 
   const { rows: [c] } = await query(
     'SELECT payouts_enabled FROM cleaner_profiles WHERE user_id = $1', [cleanerId]);
-  assert.equal(c.payouts_enabled, true, 'account.updated should have gated payouts on');
+  assert.equal(c.payouts_enabled, true, 'a succeeded verify: payout should have gated payouts on');
 });
 
 test('a handler that throws again is backed off and its attempt counted, not marked processed', async () => {
-  // amount_refunded is non-numeric, so the refunded_cents UPDATE fails on cast —
-  // a deterministic handler failure with no matching payments row required.
+  // A non-UUID payout: prefix makes the UPDATE ... WHERE id = $1 fail on the
+  // uuid cast — a deterministic handler failure with no matching row required.
   const eventId = await makeFailedEvent({
-    type: 'charge.refunded',
-    object: { id: 'ch_bogus', amount_refunded: 'not-a-number' },
+    eventType: 'PAYMENT.PAYOUTS-ITEM.SUCCEEDED',
+    resource: { payout_item: { sender_item_id: 'payout:not-a-uuid' } },
     attempts: 0,
   });
 
-  const result = await WebhookService.replayStripe();
+  const result = await WebhookService.replayPaypal();
   assert.ok(result.failed >= 1, 'the failing event should be counted as failed');
 
   const row = await eventRow(eventId);
@@ -117,15 +117,14 @@ test('a handler that throws again is backed off and its attempt counted, not mar
 });
 
 test('a poison-pilled event (attempts exhausted) is left for a human, not retried', async () => {
-  const accountId = `acct_it_${randomUUID().slice(0, 12)}`;
-  const cleanerId = await makeCleaner({ accountId, payoutsEnabled: false });
+  const cleanerId = await makeCleaner({ payoutsEnabled: false });
   const eventId = await makeFailedEvent({
-    type: 'account.updated',
-    object: { id: accountId, payouts_enabled: true, charges_enabled: true },
+    eventType: 'PAYMENT.PAYOUTS-ITEM.SUCCEEDED',
+    resource: { payout_item: { sender_item_id: `verify:${cleanerId}` } },
     attempts: config.webhooks.maxReplayAttempts, // at the threshold → never selected
   });
 
-  await WebhookService.replayStripe();
+  await WebhookService.replayPaypal();
 
   const row = await eventRow(eventId);
   assert.equal(row.processed_at, null, 'a poison-pilled event stays unprocessed');
@@ -137,16 +136,15 @@ test('a poison-pilled event (attempts exhausted) is left for a human, not retrie
 });
 
 test('an event not yet due (inside its backoff) is skipped', async () => {
-  const accountId = `acct_it_${randomUUID().slice(0, 12)}`;
-  const cleanerId = await makeCleaner({ accountId, payoutsEnabled: false });
+  const cleanerId = await makeCleaner({ payoutsEnabled: false });
   const eventId = await makeFailedEvent({
-    type: 'account.updated',
-    object: { id: accountId, payouts_enabled: true, charges_enabled: true },
+    eventType: 'PAYMENT.PAYOUTS-ITEM.SUCCEEDED',
+    resource: { payout_item: { sender_item_id: `verify:${cleanerId}` } },
     attempts: 2,
     dueInSeconds: 3600, // due in an hour
   });
 
-  await WebhookService.replayStripe();
+  await WebhookService.replayPaypal();
 
   const row = await eventRow(eventId);
   assert.equal(row.processed_at, null, 'a not-yet-due event stays unprocessed');

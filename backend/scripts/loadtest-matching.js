@@ -54,9 +54,9 @@ async function seedSupply() {
   // 15–30 km service radius and many don't — the radius filter does real work.
   await query(
     `INSERT INTO cleaner_profiles
-       (user_id, stripe_account_id, payouts_enabled, onboarding_status, bg_status,
+       (user_id, paypal_email, payouts_enabled, onboarding_status, bg_status,
         bg_completed_at, bg_expires_at, service_types, home_location, service_radius_km, is_available)
-     SELECT u.id, 'acct_loadtest_' || u.id, true, 'approved', 'clear',
+     SELECT u.id, 'loadtest-' || u.id || '@example.com', true, 'approved', 'clear',
             now() - interval '10 days', now() + interval '300 days',
             ARRAY['standard','deep'],
             ST_SetSRID(ST_MakePoint($2 + (random() - 0.5) * 0.6, $3 + (random() - 0.5) * 0.6), 4326)::geography,

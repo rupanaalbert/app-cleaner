@@ -20,12 +20,12 @@ test('a counter renders zero before use and sums increments', () => {
 test('counter labels render as sorted, quoted label sets', () => {
   const r = new Registry();
   const c = r.counter('sparkle_webhook_processed_total', 'Webhooks');
-  c.inc({ provider: 'stripe', outcome: 'ok' });
-  c.inc({ outcome: 'ok', provider: 'stripe' }); // same series, order-independent
-  c.inc({ provider: 'stripe', outcome: 'failed' });
+  c.inc({ provider: 'paypal', outcome: 'ok' });
+  c.inc({ outcome: 'ok', provider: 'paypal' }); // same series, order-independent
+  c.inc({ provider: 'paypal', outcome: 'failed' });
   const out = r.render();
-  assert.ok(has(out, 'sparkle_webhook_processed_total{outcome="ok",provider="stripe"} 2'));
-  assert.ok(has(out, 'sparkle_webhook_processed_total{outcome="failed",provider="stripe"} 1'));
+  assert.ok(has(out, 'sparkle_webhook_processed_total{outcome="ok",provider="paypal"} 2'));
+  assert.ok(has(out, 'sparkle_webhook_processed_total{outcome="failed",provider="paypal"} 1'));
 });
 
 test('a gauge holds the last value set', () => {

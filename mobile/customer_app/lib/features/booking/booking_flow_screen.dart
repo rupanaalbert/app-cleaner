@@ -4,6 +4,7 @@ import 'package:intl/intl.dart';
 import '../../core/theme.dart';
 import '../../data/booking_repository.dart';
 import 'booking_controller.dart';
+import 'paypal_approval_screen.dart';
 import 'steps/home_step.dart';
 import 'steps/review_step.dart';
 import 'steps/schedule_step.dart';
@@ -48,9 +49,29 @@ class _BookingFlowScreenState extends State<BookingFlowScreen> {
   }
 
   Future<void> _confirm() async {
-    // In production this is Stripe's PaymentSheet; it returns a payment method
-    // the backend attaches to a manual-capture PaymentIntent.
-    await c.submit('pm_card_visa');
+    final PaypalOrder order;
+    try {
+      order = await c.createPaypalOrder();
+    } catch (e) {
+      if (!mounted) return;
+      _showSubmitError('$e');
+      return;
+    }
+    if (!mounted) return;
+
+    // The fake repository has no real PayPal to redirect through — it signals
+    // an already-approved order instead of a real approve link so the demo
+    // flow completes the same way it always has.
+    var approved = order.approveUrl == kDemoApprovedPaypalUrl;
+    if (!approved) {
+      final result = await Navigator.of(context).push<PaypalApprovalResult>(
+        MaterialPageRoute(builder: (_) => PaypalApprovalScreen(approveUrl: order.approveUrl)),
+      );
+      approved = result?.approved ?? false;
+    }
+    if (!approved || !mounted) return;
+
+    await c.submit(order.orderId);
     if (!mounted) return;
     if (c.confirmed != null) {
       await showModalBottomSheet<void>(
@@ -63,14 +84,18 @@ class _BookingFlowScreenState extends State<BookingFlowScreen> {
         builder: (_) => _ConfirmedSheet(booking: c.confirmed!),
       );
     } else if (c.submitError != null) {
-      ScaffoldMessenger.of(context)
-        ..hideCurrentSnackBar()
-        ..showSnackBar(SnackBar(
-          content: Text(c.submitError!),
-          backgroundColor: Sparkle.clay,
-          behavior: SnackBarBehavior.floating,
-        ));
+      _showSubmitError(c.submitError!);
     }
+  }
+
+  void _showSubmitError(String message) {
+    ScaffoldMessenger.of(context)
+      ..hideCurrentSnackBar()
+      ..showSnackBar(SnackBar(
+        content: Text(message),
+        backgroundColor: Sparkle.clay,
+        behavior: SnackBarBehavior.floating,
+      ));
   }
 
   @override

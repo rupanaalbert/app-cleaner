@@ -51,11 +51,16 @@ Errors: `422 OUTSIDE_SERVICE_AREA`, `422 LEAD_TIME_TOO_SHORT` (< 2h), `409 QUOTE
 
 ---
 
+### `POST /quotes/:id/paypal-order` — pre-approval
+Customer. Creates a PayPal order (`intent: AUTHORIZE`) for this quote's buffered total; the client opens `approve_url` in a webview and captures the returned order id on redirect to `sparkle://booking/paypal/return`. Must happen before `POST /bookings` — unlike the old Stripe flow, PayPal's authorization needs the buyer's approval up front, not inline during booking creation.
+
+`201` → `{ "order_id": "5O1...", "approve_url": "https://www.paypal.com/checkoutnow?token=..." }`
+
 ### `POST /bookings` — confirm and authorize
-Customer. Creates the booking, authorizes the card, enqueues matching. Atomic: if the PaymentIntent fails, no booking row survives.
+Customer. Creates the booking, turns the already-approved PayPal order into a real authorization, enqueues matching. Atomic: if the authorization fails, no booking row survives.
 
 ```json
-{ "quote_id": "018f...", "payment_method_id": "pm_1P...",
+{ "quote_id": "018f...", "paypal_order_id": "5O1...",
   "special_instructions": "Cat is friendly. Code #4417.",
   "entry_method": "lockbox" }
 ```
@@ -66,8 +71,7 @@ Customer. Creates the booking, authorizes the card, enqueues matching. Atomic: i
     "id": "018f...", "reference": "SPK-8J4K2Q", "status": "pending_match",
     "scheduled_at": "2026-08-22T14:00:00Z", "duration_min": 180,
     "total_cents": 18352, "cleaner": null },
-  "payment": { "status": "authorized", "authorized_cents": 20187,
-               "client_secret": "pi_..._secret_..." } }
+  "payment": { "status": "authorized", "authorized_cents": 20187 } }
 ```
 The authorization carries a ~10% buffer for overage; only the actual amount is captured. Errors: `402 CARD_DECLINED`, `409 QUOTE_EXPIRED`, `409 SLOT_TAKEN`.
 
@@ -153,18 +157,20 @@ Cleaner only, rate-limited to 3/min. `{ "lat": 42.42, "lng": -71.06 }` → `204`
 ## Payments
 
 ### `POST /bookings/:id/payments/capture`
-Internal/admin; normally fired automatically on `completed`.
+Internal/admin; normally fired automatically on `completed`. Captures the customer's charge; the cleaner's share is **not** transferred here — it's queued as a `pending` payout and disbursed later by the `disburse_pending_payouts` sweep once `payouts.holdWindowHours` has passed (PayPal has no destination-charge equivalent that also supports the manual-capture hold this app relies on — see `payment.service.js`).
 ```json
 { "actual_duration_min": 195 }
 ```
 `200`
 ```json
-{ "captured_cents": 18352, "application_fee_cents": 4092,
-  "transfer": { "id": "tr_1P...", "amount_cents": 14260, "destination": "acct_1P..." } }
+{ "captured_cents": 18352, "payout_cents": 14260 }
 ```
 
+### `POST /bookings/:id/tip/paypal-order`
+Same pre-approval pattern as `POST /quotes/:id/paypal-order`, for a tip amount. `201` → `{ "order_id", "approve_url" }`.
+
 ### `POST /bookings/:id/tip`
-Within 24h of completion. Tips transfer 100% to the cleaner — no commission, no fee.
+Within 24h of completion. `{ "amount_cents", "paypal_order_id" }`. Tips authorize-and-capture immediately and transfer 100% to the cleaner — no commission, no fee — but still queue through the normal pending-payout batch, same as any other payout.
 
 ### `POST /bookings/:id/refund`
 Admin or automated dispute resolution. `{ "amount_cents": 5000, "reason": "quality" }` → creates a `refunds` row and a reversing `ledger_entries` pair.
@@ -172,8 +178,8 @@ Admin or automated dispute resolution. `{ "amount_cents": 5000, "reason": "quali
 ### `GET /cleaner/earnings?from=&to=`
 `200` → `{ "gross_cents", "commission_cents", "net_cents", "tips_cents", "jobs": 14, "next_payout": { "amount_cents", "arrival_date" } }`
 
-### `POST /webhooks/stripe`
-Raw body, signature-verified. Handled: `payment_intent.succeeded`, `payment_intent.payment_failed`, `charge.refunded`, `charge.dispute.created`, `transfer.created`, `payout.paid`, `payout.failed`, `account.updated` (gates `payouts_enabled`). Every event is inserted into `webhook_events` first; duplicates return `200` without reprocessing. A handler that throws is recorded (not 5xx'd, which would trigger Stripe's own retries) and picked up by the replay sweep — exponential backoff, poison-pilled after `webhooks.maxReplayAttempts`, then visible under `GET /admin/webhooks/failed`.
+### `POST /webhooks/paypal`
+Raw body, verified via PayPal's `/v1/notifications/verify-webhook-signature` endpoint (not a local HMAC — one extra round trip, no certificate parsing to get wrong). Handled: `PAYMENT.CAPTURE.REFUNDED`, `CUSTOMER.DISPUTE.CREATED`, `PAYMENT.PAYOUTS-ITEM.SUCCEEDED` / `.FAILED` / `.BLOCKED` / `.RETURNED`. The `PAYMENT.PAYOUTS-ITEM.SUCCEEDED` case is the only place `payouts_enabled` is ever set — either for a real payout batch item (`sender_item_id: payout:{payoutRowId}`) or the reserved `verify:{cleanerId}` verification-payout item sent when a cleaner saves their PayPal email. Every event is inserted into `webhook_events` first; duplicates return `200` without reprocessing. A handler that throws is recorded (not 5xx'd, which would trigger PayPal's own retries — up to 25 over 3 days) and picked up by the replay sweep — exponential backoff, poison-pilled after `webhooks.maxReplayAttempts`, then visible under `GET /admin/webhooks/failed`.
 
 ### `POST /webhooks/checkr`
 `report.completed` → maps Checkr status to `bg_check_status`; `clear` advances onboarding to `approved` and unlocks dispatch. `consider` routes to admin review; the report body is never persisted.
@@ -250,7 +256,7 @@ Four independent tracks plus a submit step. Order is not enforced: the Checkr re
 | `PUT /cleaner/onboarding/availability` | Replaces the whole weekly schedule. Partial edits of a calendar are a bug factory. |
 | `POST /cleaner/onboarding/documents` | Returns a presigned S3 PUT (15 min, SSE-KMS). Documents never transit the API. Re-uploading a rejected type replaces it rather than stacking rows. |
 | `POST /cleaner/onboarding/documents/:id/confirm` | `{ sha256 }` after the PUT succeeds. |
-| `POST /cleaner/onboarding/payouts` | Creates a Stripe Connect Express account if needed, returns a one-time account link. `payouts_enabled` is only ever set by the `account.updated` webhook — Stripe decides when an account can receive money. |
+| `POST /cleaner/onboarding/payouts` | `{ "paypal_email" }` → `{ "status": "verification_sent" }`. Saves the email and fires a $0.01 verification payout — no hosted redirect. `payouts_enabled` is only ever set by that payout's webhook resolving successfully, never on this call. |
 | `POST /cleaner/onboarding/background-check` | Creates the Checkr candidate and invitation. Only the report id and verdict are stored; the report body never is. |
 | `POST /cleaner/onboarding/submit` | `422 ONBOARDING_INCOMPLETE` with the outstanding steps. A still-running background check does **not** block submission — a reviewer can work the rest of the file while it lands. |
 | `PATCH /cleaner/availability` | The online toggle. `422 NOT_APPROVED` before approval. |

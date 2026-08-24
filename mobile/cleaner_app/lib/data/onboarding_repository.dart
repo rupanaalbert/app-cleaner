@@ -134,7 +134,7 @@ abstract class OnboardingRepository {
   });
   Future<OnboardingState> setAvailability(List<Map<String, int>> windows);
   Future<OnboardingState> uploadDocument(String docType, List<int> bytes, {String? expiresAt});
-  Future<String> payoutsLink();
+  Future<OnboardingState> savePayoutsEmail(String email);
   Future<String?> startBackgroundCheck();
   Future<void> submit();
 }
@@ -218,18 +218,20 @@ class HttpOnboardingRepository implements OnboardingRepository {
     ));
   }
 
+  /// PayPal Payouts, not a Stripe-style hosted onboarding link — there's
+  /// nowhere to redirect to. The backend saves the email and fires a $0.01
+  /// verification payout; `payouts_enabled` flips once that resolves (see
+  /// backend/src/services/webhook.service.js), so this just reloads state
+  /// rather than returning a URL to open.
   @override
-  Future<String> payoutsLink() async {
+  Future<OnboardingState> savePayoutsEmail(String email) async {
     final res = await _client.post(
       Uri.parse('$baseUrl/v1/cleaner/onboarding/payouts'),
       headers: await _headers(),
-      body: jsonEncode({
-        'return_url': 'sparkle://onboarding/payouts/done',
-        'refresh_url': 'sparkle://onboarding/payouts/retry',
-      }),
+      body: jsonEncode({'paypal_email': email}),
     );
     if (res.statusCode != 200) throw ApiFailure(_detail(res));
-    return (jsonDecode(res.body) as Map<String, dynamic>)['url'] as String;
+    return load();
   }
 
   @override

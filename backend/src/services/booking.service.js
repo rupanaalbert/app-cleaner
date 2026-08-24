@@ -24,7 +24,7 @@ const TRANSITIONS = {
 const REQUIRES_LOCATION = new Set(['arrived', 'completed']);
 
 export class BookingService {
-  static async create({ customerId, quoteId, paymentMethodId, specialInstructions, entryMethod }) {
+  static async create({ customerId, quoteId, paypalOrderId, specialInstructions, entryMethod }) {
     return withTransaction(async (client) => {
       const { rows: [quote] } = await client.query(
         `SELECT * FROM quotes WHERE id = $1 AND customer_id = $2 FOR UPDATE`,
@@ -59,7 +59,7 @@ export class BookingService {
       // funds is a booking you cannot collect on; if this throws, the whole
       // transaction rolls back and no orphan row survives.
       const payment = await PaymentService.authorize({
-        client, booking, customerId, paymentMethodId,
+        client, booking, customerId, paypalOrderId,
         amountCents: PricingService.authorizationAmount(booking.total_cents),
       });
 

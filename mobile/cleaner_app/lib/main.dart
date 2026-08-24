@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
+import 'package:image_picker/image_picker.dart';
 
 import 'core/theme.dart';
 import 'data/chat_repository.dart';
@@ -8,9 +9,13 @@ import 'data/earnings_repository.dart';
 import 'data/geolocation.dart';
 import 'data/jobs_repository.dart';
 import 'data/offers_repository.dart';
+import 'data/onboarding_repository.dart';
 import 'features/active_job/active_job_screen.dart';
 import 'features/earnings/earnings_screen.dart';
 import 'features/job_discovery/job_discovery_screen.dart';
+import 'features/onboarding/documents_step_screen.dart';
+import 'features/onboarding/onboarding_hub_screen.dart';
+import 'features/onboarding/payouts_step_screen.dart';
 import 'features/schedule/schedule_screen.dart';
 
 void main() => runApp(const SparkleCleanerApp());
@@ -34,12 +39,14 @@ class SparkleCleanerApp extends StatelessWidget {
         earnings: _FakeEarningsRepository(),
         locator: const FakeLocator(),
         chat: _FakeChatRepository(),
+        onboarding: _FakeOnboardingRepository(),
       ),
     );
   }
 }
 
-/// The cleaner's three tabs: find work, do the work you took, see what you made.
+/// The cleaner's four tabs: find work, do the work you took, see what you
+/// made, get approved to work at all.
 class HomeShell extends StatefulWidget {
   const HomeShell({
     super.key,
@@ -48,6 +55,7 @@ class HomeShell extends StatefulWidget {
     required this.earnings,
     required this.locator,
     required this.chat,
+    required this.onboarding,
   });
 
   final OffersRepository offers;
@@ -55,6 +63,7 @@ class HomeShell extends StatefulWidget {
   final EarningsRepository earnings;
   final Locator locator;
   final ChatRepository chat;
+  final OnboardingRepository onboarding;
 
   @override
   State<HomeShell> createState() => _HomeShellState();
@@ -62,6 +71,9 @@ class HomeShell extends StatefulWidget {
 
 class _HomeShellState extends State<HomeShell> {
   int _tab = 0;
+  // Bumped whenever a step screen returns, so OnboardingHubScreen remounts
+  // (via its key below) and reloads instead of showing stale progress.
+  int _onboardingRefreshTick = 0;
 
   Future<void> _openJob(ScheduledJob job) async {
     await Navigator.of(context).push(MaterialPageRoute(
@@ -76,6 +88,41 @@ class _HomeShellState extends State<HomeShell> {
     ));
   }
 
+  Future<void> _openOnboardingStep(String key) async {
+    final state = await widget.onboarding.load();
+    if (!mounted) return;
+
+    switch (key) {
+      case 'documents':
+        await Navigator.of(context).push(MaterialPageRoute(
+          builder: (_) => DocumentsStepScreen(
+            repository: widget.onboarding,
+            initial: state,
+            pickImage: (fromCamera) async {
+              final file = await ImagePicker().pickImage(
+                source: fromCamera ? ImageSource.camera : ImageSource.gallery,
+                imageQuality: 70,
+                maxWidth: 1600,
+              );
+              return file == null ? null : file.readAsBytes();
+            },
+          ),
+        ));
+      case 'payouts':
+        await Navigator.of(context).push(MaterialPageRoute(
+          builder: (_) => PayoutsStepScreen(repository: widget.onboarding, initial: state),
+        ));
+      default:
+        // Profile and background-check steps don't have dedicated screens yet
+        // — a pre-existing gap, not something this payments migration adds.
+        ScaffoldMessenger.of(context)
+          ..hideCurrentSnackBar()
+          ..showSnackBar(const SnackBar(content: Text('Coming soon')));
+        return;
+    }
+    if (mounted) setState(() => _onboardingRefreshTick++);
+  }
+
   @override
   Widget build(BuildContext context) {
     // Rebuilt per selection so Schedule and Earnings are always fresh when
@@ -83,6 +130,11 @@ class _HomeShellState extends State<HomeShell> {
     final screen = switch (_tab) {
       1 => ScheduleScreen(repository: widget.jobs, onOpenJob: _openJob),
       2 => EarningsScreen(repository: widget.earnings),
+      3 => OnboardingHubScreen(
+          key: ValueKey(_onboardingRefreshTick),
+          repository: widget.onboarding,
+          onOpenStep: _openOnboardingStep,
+        ),
       _ => JobDiscoveryScreen(
           repository: widget.offers,
           onOfferAccepted: (_) => setState(() => _tab = 1), // land on the schedule
@@ -98,6 +150,7 @@ class _HomeShellState extends State<HomeShell> {
           NavigationDestination(icon: Icon(Icons.search), label: 'Discover'),
           NavigationDestination(icon: Icon(Icons.event_note_outlined), label: 'Schedule'),
           NavigationDestination(icon: Icon(Icons.payments_outlined), label: 'Earnings'),
+          NavigationDestination(icon: Icon(Icons.verified_user_outlined), label: 'Approval'),
         ],
       ),
     );
@@ -270,6 +323,124 @@ class _FakeChatRepository implements ChatRepository {
     await Future<void>.delayed(const Duration(milliseconds: 150));
     _messages.add(ChatMessage(id: '${_messages.length}', senderId: 'me', body: body, sentAt: DateTime.now()));
     _controller.add(List.of(_messages));
+  }
+}
+
+/// Simulates instant approval at every step — there's no reviewer or PayPal
+/// sandbox behind a fake. The real `HttpOnboardingRepository` gates
+/// `payouts_enabled` on an async webhook (see webhook.service.js); this fake
+/// just flips it on the call so the demo flow doesn't stall waiting for
+/// something that will never arrive.
+class _FakeOnboardingRepository implements OnboardingRepository {
+  bool _profileDone = false;
+  bool _availabilityDone = false;
+  final Set<String> _verifiedDocs = {};
+  bool _payoutsDone = false;
+  String _bgStatus = 'not_started';
+
+  OnboardingState _snapshot() {
+    const requiredDocs = ['gov_id', 'insurance', 'work_auth'];
+    return OnboardingState.fromJson({
+      'onboarding_status': _bgStatus == 'clear' &&
+              _profileDone &&
+              _availabilityDone &&
+              _verifiedDocs.length == requiredDocs.length &&
+              _payoutsDone
+          ? 'approved'
+          : 'started',
+      'ready_to_submit': _profileDone &&
+          _availabilityDone &&
+          _verifiedDocs.length == requiredDocs.length &&
+          _payoutsDone,
+      'submitted': false,
+      'documents': [
+        for (final type in _verifiedDocs)
+          {'doc_type': type, 'id': type, 'verified_at': DateTime.now().toIso8601String()},
+      ],
+      'availability': _availabilityDone
+          ? [
+              for (var d = 1; d <= 5; d++) {'day_of_week': d},
+            ]
+          : [],
+      'steps': {
+        'profile': {
+          'complete': _profileDone && _availabilityDone,
+          'detail': _availabilityDone ? '5 weekly windows, 15 km radius' : 'Add the hours you can work',
+        },
+        'documents': {
+          'complete': _verifiedDocs.length == requiredDocs.length,
+          'detail': _verifiedDocs.length == requiredDocs.length
+              ? '${_verifiedDocs.length} uploaded'
+              : 'Still needed: ${requiredDocs.where((d) => !_verifiedDocs.contains(d)).join(', ')}',
+        },
+        'payouts': {
+          'complete': _payoutsDone,
+          'detail': _payoutsDone ? 'Ready to receive payouts' : 'Add your PayPal email',
+        },
+        'background_check': {
+          'complete': _bgStatus == 'clear',
+          'detail': switch (_bgStatus) {
+            'clear' => 'Clear',
+            'pending' => 'In progress — usually 1 to 3 business days',
+            _ => 'Consent to a background check',
+          },
+        },
+      },
+    });
+  }
+
+  @override
+  Future<OnboardingState> load() async {
+    await Future<void>.delayed(const Duration(milliseconds: 250));
+    return _snapshot();
+  }
+
+  @override
+  Future<OnboardingState> saveProfile({
+    String? bio,
+    int? yearsExperience,
+    List<String>? serviceTypes,
+    double? serviceRadiusKm,
+  }) async {
+    await Future<void>.delayed(const Duration(milliseconds: 300));
+    _profileDone = true;
+    return _snapshot();
+  }
+
+  @override
+  Future<OnboardingState> setAvailability(List<Map<String, int>> windows) async {
+    await Future<void>.delayed(const Duration(milliseconds: 300));
+    _availabilityDone = windows.isNotEmpty;
+    return _snapshot();
+  }
+
+  @override
+  Future<OnboardingState> uploadDocument(String docType, List<int> bytes, {String? expiresAt}) async {
+    await Future<void>.delayed(const Duration(milliseconds: 500));
+    _verifiedDocs.add(docType);
+    return _snapshot();
+  }
+
+  @override
+  Future<OnboardingState> savePayoutsEmail(String email) async {
+    await Future<void>.delayed(const Duration(milliseconds: 400));
+    _payoutsDone = true;
+    return _snapshot();
+  }
+
+  @override
+  Future<String?> startBackgroundCheck() async {
+    await Future<void>.delayed(const Duration(milliseconds: 300));
+    _bgStatus = 'clear';
+    return null;
+  }
+
+  @override
+  Future<void> submit() async {
+    await Future<void>.delayed(const Duration(milliseconds: 300));
+    if (!_snapshot().readyToSubmit) {
+      throw const OnboardingIncomplete('Finish the tasks above first.');
+    }
   }
 }
 

@@ -76,7 +76,7 @@ jobs:
   # The booking state machine against real PostGIS: the concurrent-accept race,
   # the transition map, the no_double_booking exclusion, geofencing, and the
   # photo gate. Kept separate from `unit` because it needs a database; no Redis,
-  # Firebase, or Stripe — the tests stub those and assert only paths that reject
+  # Firebase, or PayPal — the tests stub those and assert only paths that reject
   # before money moves.
   integration:
     runs-on: ubuntu-latest

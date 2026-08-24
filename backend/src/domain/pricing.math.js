@@ -76,7 +76,7 @@ export function composeQuote({ rules, property, service, addons = [], scheduledA
 
   const subtotalCents = applyBps(afterService, demand.combinedBps);
   const tsFeeCents = trustAndSafetyFee(rules, subtotalCents);
-  const taxCents = 0; // Stripe Tax handles this at capture in taxable metros
+  const taxCents = 0; // No tax provider wired up yet — a no-op in every metro today
   const commissionCents = applyBps(subtotalCents, rules.commission_bps);
 
   const rawMinutes = service.base_minutes

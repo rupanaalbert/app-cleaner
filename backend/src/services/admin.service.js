@@ -124,9 +124,9 @@ export class AdminService {
 
   /**
    * Approval gate. Three conditions, and none of them are waivable from the
-   * UI: a clear background check, every document verified, and a Stripe
-   * account that can actually receive money. Approving a cleaner who can't be
-   * paid produces a job that completes and then fails at transfer.
+   * UI: a clear background check, every document verified, and a verified
+   * PayPal email that can actually receive money. Approving a cleaner who
+   * can't be paid produces a job that completes and then fails at payout.
    */
   static async approveCleaner({ cleanerId, actorId, ip }) {
     return withTransaction(async (client) => {
@@ -148,7 +148,7 @@ export class AdminService {
       }
       if (!profile.payouts_enabled) {
         throw AppError.unprocessable('PAYOUTS_DISABLED',
-          'Stripe onboarding is incomplete — this cleaner could not be paid.');
+          'PayPal payout details are unverified — this cleaner could not be paid.');
       }
 
       const { rows: [after] } = await client.query(

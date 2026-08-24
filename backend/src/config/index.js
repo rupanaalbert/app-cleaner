@@ -8,8 +8,10 @@ const env = z.object({
   REDIS_URL: z.string().url(),
   JWT_ACCESS_SECRET: z.string().min(16),
   JWT_REFRESH_SECRET: z.string().min(16),
-  STRIPE_SECRET_KEY: z.string(),
-  STRIPE_WEBHOOK_SECRET: z.string(),
+  PAYPAL_CLIENT_ID: z.string(),
+  PAYPAL_CLIENT_SECRET: z.string(),
+  PAYPAL_WEBHOOK_ID: z.string(),
+  PAYPAL_ENV: z.enum(['sandbox', 'live']).default('sandbox'),
   CHECKR_API_KEY: z.string().optional(),
   GOOGLE_MAPS_KEY: z.string().optional(),
   TWILIO_ACCOUNT_SID: z.string().optional(),
@@ -41,7 +43,13 @@ export const config = {
     accessTtl: '15m',
     refreshTtlDays: 60,
   },
-  stripe: { key: env.STRIPE_SECRET_KEY, webhookSecret: env.STRIPE_WEBHOOK_SECRET },
+  paypal: {
+    clientId: env.PAYPAL_CLIENT_ID,
+    clientSecret: env.PAYPAL_CLIENT_SECRET,
+    webhookId: env.PAYPAL_WEBHOOK_ID,
+    env: env.PAYPAL_ENV,
+    baseUrl: env.PAYPAL_ENV === 'live' ? 'https://api-m.paypal.com' : 'https://api-m.sandbox.paypal.com',
+  },
   checkr: { key: env.CHECKR_API_KEY },
   maps: { key: env.GOOGLE_MAPS_KEY },
   twilio: {
@@ -101,6 +109,16 @@ export const config = {
     replayBatchSize: 25,         // rows per sweep
     backoffBaseSeconds: 30,      // delay = base * 2^attempts, capped
     backoffCapSeconds: 3_600,
+  },
+
+  payouts: {
+    // PayPal Payouts has no reverse_transfer equivalent, so a refund can't
+    // atomically claw back money already sent to a cleaner. Holding a
+    // completed booking's payout for this long before disbursing gives a
+    // refund the normal chance to land first — matches Stripe's own 2-day
+    // default delay_days so behavior doesn't visibly regress.
+    holdWindowHours: 48,
+    disburseBatchSize: 500,
   },
 
   privacy: {

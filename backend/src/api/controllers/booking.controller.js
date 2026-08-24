@@ -22,7 +22,7 @@ export const BookingController = {
       const result = await BookingService.create({
         customerId: req.user.id,
         quoteId: req.body.quote_id,
-        paymentMethodId: req.body.payment_method_id,
+        paypalOrderId: req.body.paypal_order_id,
         specialInstructions: req.body.special_instructions,
         entryMethod: req.body.entry_method,
       });

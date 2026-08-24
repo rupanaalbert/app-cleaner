@@ -10,7 +10,7 @@ const router = Router();
 
 const create = z.object({
   quote_id: z.string().uuid(),
-  payment_method_id: z.string().startsWith('pm_'),
+  paypal_order_id: z.string().min(1),
   special_instructions: z.string().max(1000).optional(),
   entry_method: z.enum(['home', 'lockbox', 'doorman', 'hidden_key']).optional(),
 });

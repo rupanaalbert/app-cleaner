@@ -8,24 +8,31 @@ import { PaymentService } from '../../services/payment.service.js';
 
 const router = Router();
 
+/** The customer approves this order (webview) before POST /tip carries its id — same pattern as booking creation. */
+router.post('/bookings/:id/tip/paypal-order', requireAuth, requireRole('customer'), requireBookingParty,
+  validate(z.object({ amount_cents: z.number().int().min(100).max(20_000) })),
+  async (req, res, next) => {
+    try {
+      const order = await PaymentService.createOrder({
+        amountCents: req.body.amount_cents, reference: `${req.params.id}:tip`,
+      });
+      res.status(201).json(order);
+    } catch (err) { next(err); }
+  });
+
 router.post('/bookings/:id/tip', requireAuth, requireRole('customer'), requireBookingParty,
   idempotency, validate(z.object({
     amount_cents: z.number().int().min(100).max(20_000),
-    payment_method_id: z.string().startsWith('pm_'),
+    paypal_order_id: z.string().min(1),
   })),
   async (req, res, next) => {
     try {
       const result = await withTransaction(async (client) => {
         const { rows: [ctx] } = await client.query(
-          `SELECT b.*, cp.stripe_customer_id, cl.stripe_account_id
-             FROM bookings b
-             JOIN customer_profiles cp ON cp.user_id = b.customer_id
-             JOIN cleaner_profiles  cl ON cl.user_id = b.cleaner_id
-            WHERE b.id = $1`, [req.params.id]);
+          `SELECT b.* FROM bookings b WHERE b.id = $1`, [req.params.id]);
         return PaymentService.tip({
           client, booking: ctx, amountCents: req.body.amount_cents,
-          paymentMethodId: req.body.payment_method_id,
-          customerStripeId: ctx.stripe_customer_id, cleanerAccountId: ctx.stripe_account_id,
+          paypalOrderId: req.body.paypal_order_id,
         });
       });
       res.status(201).json({ tip: { amount_cents: req.body.amount_cents, status: result.status } });

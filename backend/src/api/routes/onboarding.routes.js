@@ -76,12 +76,10 @@ router.post('/onboarding/documents/:id/confirm',
   });
 
 router.post('/onboarding/payouts',
-  validate(z.object({ return_url: z.string().url(), refresh_url: z.string().url() })),
+  validate(z.object({ paypal_email: z.string().email() })),
   async (req, res, next) => {
     try {
-      res.json(await OnboardingService.payoutsLink(req.user.id, {
-        returnUrl: req.body.return_url, refreshUrl: req.body.refresh_url,
-      }));
+      res.json(await OnboardingService.savePayoutsEmail(req.user.id, req.body.paypal_email));
     } catch (err) { next(err); }
   });
 

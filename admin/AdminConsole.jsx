@@ -407,7 +407,7 @@ function VettingCase({ cleaner, onDecide, onVerifyDoc }) {
     const out = [];
     if (cleaner.bg_status !== "clear") out.push(`Background check is ${cleaner.bg_status}`);
     if (unverified.length) out.push(`${unverified.length} document${unverified.length > 1 ? "s" : ""} unreviewed`);
-    if (!cleaner.payouts_enabled) out.push("Stripe onboarding incomplete — could not be paid");
+    if (!cleaner.payouts_enabled) out.push("Payout details incomplete — could not be paid");
     return out;
   }, [cleaner, unverified.length]);
 
@@ -458,7 +458,7 @@ function VettingCase({ cleaner, onDecide, onVerifyDoc }) {
         </span>
         <span className={`rounded px-2 py-1 text-xs ${cleaner.payouts_enabled
           ? "border border-[#DCE7E4] text-[#33484F]" : "bg-[#FBE9E4] text-[#C4553D]"}`}>
-          {cleaner.payouts_enabled ? "Stripe ready" : "Stripe incomplete"}
+          {cleaner.payouts_enabled ? "Payouts ready" : "Payouts incomplete"}
         </span>
       </div>
 
@@ -878,7 +878,7 @@ function EmptyQueue({ tab }) {
       <p className="mt-1 max-w-sm text-sm text-[#6B8087]">
         {tab === "vetting"
           ? "New applicants land here the moment their background check returns."
-          : "Disputes appear here when a customer opens one, or when Stripe reports a chargeback."}
+          : "Disputes appear here when a customer opens one, or when PayPal reports a chargeback."}
       </p>
     </div>
   );

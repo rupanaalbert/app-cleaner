@@ -10,7 +10,7 @@ Same-origin by default. To point at an API on another origin, set `window.__SPAR
 
 **Three things the UI refuses to do:**
 
-1. **Approve past the gates.** Clear background check, every document reviewed, Stripe payouts enabled. The button is disabled *and* the unmet gates are listed — a disabled control with no explanation is how agents end up messaging engineering. The API enforces the same three independently; the UI is a convenience, not the control.
+1. **Approve past the gates.** Clear background check, every document reviewed, PayPal payouts verified. The button is disabled *and* the unmet gates are listed — a disabled control with no explanation is how agents end up messaging engineering. The API enforces the same three independently; the UI is a convenience, not the control.
 2. **Reject or suspend without a reason.** The textarea is required client-side and the endpoint returns `400 REASON_REQUIRED` regardless. The note goes to the applicant, so it's labelled as something they will read.
 3. **Couple refunds to cleaner fault.** Separate controls, by design. A broken lockbox makes the customer whole and leaves the cleaner blameless; one combined "resolve" slider teaches agents to under-refund to protect good cleaners.
 

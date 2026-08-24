@@ -147,6 +147,27 @@ class ConfirmedBooking {
   }
 }
 
+/// The order the customer approves via [PaypalApprovalScreen] before
+/// `confirm` is called. `approveUrl` is opened in a webview; PayPal redirects
+/// back to `sparkle://booking/paypal/return` on approval.
+///
+/// [kDemoApprovedPaypalUrl] is a sentinel a fake repository can return to
+/// skip the webview entirely — there's no real PayPal to redirect through in
+/// a demo/offline build, and the flow should still complete like it always
+/// has for `FakeBookingRepository`.
+const kDemoApprovedPaypalUrl = 'demo:approved';
+
+class PaypalOrder {
+  final String orderId;
+  final String approveUrl;
+  const PaypalOrder({required this.orderId, required this.approveUrl});
+
+  factory PaypalOrder.fromJson(Map<String, dynamic> json) => PaypalOrder(
+        orderId: json['order_id'] as String,
+        approveUrl: json['approve_url'] as String,
+      );
+}
+
 class QuoteExpired implements Exception {
   const QuoteExpired();
 }
@@ -165,9 +186,10 @@ class ApiFailure implements Exception {
 
 abstract class BookingRepository {
   Future<Quote> requestQuote(BookingDraft draft);
+  Future<PaypalOrder> createPaypalOrder(String quoteId);
   Future<ConfirmedBooking> confirm({
     required String quoteId,
-    required String paymentMethodId,
+    required String paypalOrderId,
     required BookingDraft draft,
     required String idempotencyKey,
   });
@@ -206,9 +228,18 @@ class HttpBookingRepository implements BookingRepository {
   }
 
   @override
+  Future<PaypalOrder> createPaypalOrder(String quoteId) async {
+    final res = await _client
+        .post(Uri.parse('$baseUrl/v1/quotes/$quoteId/paypal-order'), headers: await _headers())
+        .timeout(const Duration(seconds: 10));
+    if (res.statusCode != 201) throw ApiFailure(_detail(res));
+    return PaypalOrder.fromJson(jsonDecode(res.body) as Map<String, dynamic>);
+  }
+
+  @override
   Future<ConfirmedBooking> confirm({
     required String quoteId,
-    required String paymentMethodId,
+    required String paypalOrderId,
     required BookingDraft draft,
     required String idempotencyKey,
   }) async {
@@ -219,7 +250,7 @@ class HttpBookingRepository implements BookingRepository {
       headers: await _headers(idempotencyKey),
       body: jsonEncode({
         'quote_id': quoteId,
-        'payment_method_id': paymentMethodId,
+        'paypal_order_id': paypalOrderId,
         'special_instructions': draft.specialInstructions,
         'entry_method': draft.entryMethod,
       }),

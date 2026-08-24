@@ -2,7 +2,7 @@ import { query, withTransaction } from '../db/pool.js';
 import { config } from '../config/index.js';
 import { AppError } from '../utils/errors.js';
 import { logger } from '../utils/logger.js';
-import { stripe } from './payment.service.js';
+import { paypal } from './paypal.client.js';
 
 /**
  * Cleaner onboarding.
@@ -59,9 +59,9 @@ export class OnboardingService {
       },
       payouts: {
         complete: profile.payouts_enabled,
-        detail: profile.stripe_account_id
-          ? (profile.payouts_enabled ? 'Ready to receive payouts' : 'Stripe needs a few more details')
-          : 'Connect a bank account',
+        detail: profile.paypal_email
+          ? (profile.payouts_enabled ? 'Ready to receive payouts' : 'Verifying your PayPal email — usually a few minutes')
+          : 'Add your PayPal email',
       },
       background_check: {
         complete: profile.bg_status === 'clear',
@@ -177,40 +177,42 @@ export class OnboardingService {
   }
 
   /**
-   * Stripe Connect Express. We create the account and hand back a one-time
-   * onboarding link; Stripe collects the bank details and the tax identity, so
-   * none of it lands in our database.
+   * PayPal Payouts, not Connect. There's no hosted onboarding link to send a
+   * cleaner to — the Payouts API can send to any PayPal email with no
+   * per-recipient review, which is the whole point of this over Stripe
+   * Connect Express. We save the email, then send a $0.01 verification
+   * payout to prove it's real. `payouts_enabled` is set only once that
+   * verification payout's webhook confirms success
+   * (`WebhookService.handlePaypalEvent`'s `verify:{cleanerId}` case), never
+   * here — same "never optimistic" spirit as the old account.updated gate,
+   * just a different authoritative signal.
    */
-  static async payoutsLink(cleanerId, { returnUrl, refreshUrl }) {
+  static async savePayoutsEmail(cleanerId, email) {
     const { rows: [profile] } = await query(
-      'SELECT stripe_account_id FROM cleaner_profiles WHERE user_id = $1', [cleanerId]);
+      `UPDATE cleaner_profiles SET paypal_email = $2, payouts_enabled = false
+        WHERE user_id = $1 RETURNING paypal_email`,
+      [cleanerId, email]);
     if (!profile) throw AppError.notFound('Cleaner profile');
 
-    let accountId = profile.stripe_account_id;
-    if (!accountId) {
-      const { rows: [user] } = await query('SELECT email FROM users WHERE id = $1', [cleanerId]);
-      const account = await stripe.accounts.create({
-        type: 'express',
-        email: user.email,
-        business_type: 'individual',
-        capabilities: { transfers: { requested: true } },
-        settings: { payouts: { schedule: { interval: 'daily', delay_days: 2 } } },
-        metadata: { cleaner_id: cleanerId },
-      }, { idempotencyKey: `connect:${cleanerId}` });
-      accountId = account.id;
-      await query('UPDATE cleaner_profiles SET stripe_account_id = $2 WHERE user_id = $1',
-        [cleanerId, accountId]);
-    }
-
-    const link = await stripe.accountLinks.create({
-      account: accountId,
-      type: 'account_onboarding',
-      return_url: returnUrl,
-      refresh_url: refreshUrl,
+    await paypal.request('/v1/payments/payouts', {
+      method: 'POST',
+      idempotencyKey: `verify:${cleanerId}`,
+      body: {
+        sender_batch_header: {
+          sender_batch_id: `verify:${cleanerId}:${Date.now()}`,
+          email_subject: 'Confirming your Sparkle payout details',
+        },
+        items: [{
+          recipient_type: 'EMAIL',
+          receiver: email,
+          sender_item_id: `verify:${cleanerId}`,
+          amount: { value: '0.01', currency: 'USD' },
+          note: 'Verifying this email can receive Sparkle payouts.',
+        }],
+      },
     });
-    // `payouts_enabled` is set by the account.updated webhook, never here —
-    // Stripe decides when an account can receive money, not us.
-    return { url: link.url, expires_at: new Date(link.expires_at * 1000) };
+
+    return { status: 'verification_sent' };
   }
 
   /**

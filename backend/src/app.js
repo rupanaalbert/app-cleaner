@@ -10,7 +10,7 @@ import { logger } from './utils/logger.js';
 import { registry, CONTENT_TYPE } from './observability/metrics.js';
 import { errorHandler, notFound } from './middleware/errorHandler.js';
 import { apiLimiter } from './middleware/rateLimit.js';
-import stripeWebhook from './webhooks/stripe.js';
+import paypalWebhook from './webhooks/paypal.js';
 import checkrWebhook from './webhooks/checkr.js';
 import authRoutes from './api/routes/auth.routes.js';
 import quoteRoutes from './api/routes/quotes.routes.js';
@@ -40,7 +40,7 @@ export function createApp() {
 
   // Webhooks mount BEFORE express.json(): signature verification needs the
   // raw body, and a parsed body silently breaks it.
-  app.use('/v1/webhooks/stripe', express.raw({ type: 'application/json' }), stripeWebhook);
+  app.use('/v1/webhooks/paypal', express.raw({ type: 'application/json' }), paypalWebhook);
   app.use('/v1/webhooks/checkr', express.raw({ type: 'application/json' }), checkrWebhook);
 
   app.use(express.json({ limit: '1mb' }));

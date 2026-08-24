@@ -28,7 +28,7 @@ Ship these, defer everything else:
 | Scheduled bookings (≥2h lead time) | True "now" dispatch |
 | Broadcast-then-claim matching | Auto-assign with cleaner acceptance SLAs |
 | Card payments, manual capture | Wallets, invoicing, subscriptions |
-| Stripe Connect Express accounts | Instant payouts, Sparkle debit card |
+| PayPal, collect-then-disburse | Instant payouts, Sparkle debit card |
 | Ratings affect search rank | ML-based quality scoring |
 
 The point of the "broadcast-then-claim" choice: a real dispatch algorithm needs supply-density data you won't have on day one. Rank offers, broadcast to the top N, let cleaners claim. Swap the strategy behind `MatchingService` later without touching the booking state machine.
@@ -72,7 +72,7 @@ flowchart TB
     end
 
     subgraph External
-        ST["Stripe Connect"]
+        PP["PayPal<br/>Orders v2 + Payouts"]
         CK["Checkr"]
         GM["Google Maps<br/>Distance Matrix, Places"]
         FB["Firebase<br/>FCM, Firestore chat, Realtime DB"]
@@ -83,7 +83,7 @@ flowchart TB
     API --> PG & RD & S3
     API --> Async
     Async --> PG & RD
-    PAY --> ST
+    PAY --> PP
     TRUST --> CK & TW
     MATCH --> GM
     BOOK --> FB
@@ -99,14 +99,20 @@ flowchart TB
 sequenceDiagram
     participant C as Customer App
     participant A as API
+    participant PP as PayPal
     participant M as Matching
     participant K as Cleaner App
-    participant S as Stripe
+    participant W as Worker
 
     C->>A: POST /quotes (property, service, slot)
     A-->>C: quote_id, price breakdown (TTL 15 min)
-    C->>A: POST /bookings (quote_id, payment_method)
-    A->>S: PaymentIntent (manual capture, hold funds)
+    C->>A: POST /quotes/:id/paypal-order
+    A->>PP: create order (intent: AUTHORIZE)
+    A-->>C: approve_url
+    C->>PP: approve (in-app webview)
+    PP-->>C: redirect sparkle://booking/paypal/return
+    C->>A: POST /bookings (quote_id, paypal_order_id)
+    A->>PP: authorize the approved order
     A->>M: enqueue match job
     M->>K: push offers to ranked cleaners
     K->>A: POST /offers/:id/accept (first claim wins)
@@ -114,8 +120,10 @@ sequenceDiagram
     K->>A: PATCH /bookings/:id/status → en_route
     K-->>C: live GPS via Firebase
     K->>A: → arrived → in_progress → completed (+ photos)
-    A->>S: capture, transfer 80% to cleaner
+    A->>PP: capture (customer charge only)
     A-->>C: receipt + review prompt
+    Note over A,W: cleaner's share queued as a pending payout,<br/>not sent in the capture call — see §3
+    W->>PP: disburse payout, once the hold window passes
 ```
 
 State machine (enforced in `BookingService`, mirrored by a DB trigger):
@@ -139,7 +147,7 @@ trust_fee  = TS_FLAT + round(subtotal × TS_PCT)      # capped
 total      = subtotal + trust_fee + tax
 commission = round(subtotal × 0.20)                   # platform, on subtotal only
 payout     = subtotal − commission                    # cleaner
-app_fee    = commission + trust_fee                   # Stripe application_fee_amount
+platform_fee = commission + trust_fee                 # Sparkle's own PayPal account keeps this at capture
 ```
 
 Commission is charged on the **subtotal only** — never on the trust fee, and never on the tip. Taking a cut of a safety fee is the kind of thing that ends up in a screenshot on Reddit.
@@ -171,20 +179,22 @@ Every quote persists the **fully resolved rule set** into `quotes.breakdown` (JS
 | **Customer pays** | **15,449** ($154.49) |
 | Platform commission (20% of 14,950) | 2,990 |
 | **Cleaner receives** | **11,960** ($119.60) |
-| Stripe `application_fee_amount` | 3,489 |
+| Platform fee (commission + T&S), kept at capture | 3,489 |
 
 (That $154.49 was $154.48 until `backend/test/pricing.test.js` disagreed with the README and the test was right — 1% of 14,950 is 149.5 cents, which rounds up. Worth pinning numbers like this in a test rather than a table.)
 
-Use **destination charges** (`transfer_data.destination`, `on_behalf_of` the cleaner's account): the customer's statement shows Sparkle, funds route to the cleaner, and Stripe's processing fee comes out of the platform's slice — about $4.78 here, leaving ~$29.11 net on the booking. Model that number before you set commission at 20%; it's the whole business.
+**Collect-then-disburse, not a split charge.** PayPal's multiparty split-payment feature (`payee.merchant_id` + `platform_fees` on one order) requires `intent: CAPTURE` — incompatible with the manual-capture hold this app relies on. So the customer's charge captures into **Sparkle's own PayPal account** at completion, and the cleaner's 11,960 is disbursed separately via the Payouts API once a hold window passes (see Payment timing below). This is a deliberate architectural choice, not a missing feature: it's also what let this app move off Stripe Connect Express, whose per-cleaner business-verification review was the thing blocking launch — PayPal's Payouts API sends to any email with no equivalent per-recipient review gating the send.
+
+The real cost of this choice: PayPal has no `reverse_transfer` equivalent, so a refund can't atomically claw back money already disbursed to a cleaner. The hold window exists specifically to make that rare — most refunds happen inside it, so `PaymentService.refund` just cancels the pending payout. A refund that arrives *after* disbursement instead debits the cleaner's next payout batch (`payout_adjustments` table) rather than being silently absorbed. Document this trade-off for whoever reviews the P&L; it's a real behavior difference from the old Stripe Connect design, not a bug.
 
 ### Payment timing
 
-1. **At booking**: PaymentIntent with `capture_method: manual`, ~10% buffer above quote for overage. Authorization holds up to 7 days.
-2. **At completion**: capture the actual amount (`capture` ≤ authorized). Overruns beyond the buffer require an incremental authorization or a second PI.
-3. **Transfer**: same request via `transfer_data`; funds land in the cleaner's Express account.
-4. **Payout**: Stripe's daily schedule, `payouts.schedule.interval = daily`, 2-day delay. `payouts` table mirrors this for reconciliation — you reconcile against Stripe's ledger, never against your own assumptions.
+1. **At booking**: the customer approves a PayPal order (`intent: AUTHORIZE`) via an in-app webview *before* `POST /bookings` — PayPal needs buyer approval up front, unlike Stripe's inline PaymentIntent confirmation. `POST /bookings` then turns that approval into a real authorization, ~10% buffer above quote for overage.
+2. **At completion**: capture the actual amount (`capture` ≤ authorized) into Sparkle's own account. Overruns beyond the buffer require a fresh order.
+3. **Payout queued**: the cleaner's share is inserted into `payouts` as `pending` with `hold_until` set (`config.payouts.holdWindowHours`, 48h by default — matches Stripe's own 2-day payout delay so this doesn't visibly regress). Not sent yet.
+4. **Disbursed**: a worker sweep (`disburse_pending_payouts`, every 15 min) batches every payout whose hold window has passed into a single Payouts API call. `payouts` resolves to `paid` once the item-level webhook confirms it — reconcile against PayPal's ledger, never against your own assumptions.
 
-Idempotency: every write to Stripe carries `Idempotency-Key: booking:{id}:{action}`. Every webhook is recorded in `webhook_events` before processing, keyed on Stripe's event id, and skipped if seen.
+Idempotency: every write to PayPal carries `PayPal-Request-Id: booking:{id}:{action}`. Every webhook is recorded in `webhook_events` before processing, keyed on PayPal's event id, and skipped if seen.
 
 ---
 
@@ -240,7 +250,7 @@ Build these in now; retrofitting consent onto a live schema is miserable.
 | Data minimization | GPS breadcrumbs purged at 30 days; chat at 12 months; raw Checkr reports never stored, only status + report id. |
 | CCPA "Do Not Sell/Share" | `users.dns_optout` flag; gates all ad-network and analytics SDK identifiers. |
 | Audit trail | `audit_log` on every admin action touching a user record — append-only, no UPDATE grant for the app role. |
-| Sub-processors | Stripe, Checkr, Twilio, Google, Firebase all under DPAs; EU data residency selected where offered. |
+| Sub-processors | PayPal, Checkr, Twilio, Google, Firebase all under DPAs; EU data residency selected where offered. |
 | Breach clock | Alerting on anomalous bulk reads of `users`/`addresses`; 72-hour notification runbook in ops. |
 
 ---
@@ -262,15 +272,16 @@ The MVP is a modular monolith — one Express app, clear service boundaries, one
 ```bash
 docker compose -f infra/docker-compose.yml up -d     # Postgres+PostGIS, Redis
 cd backend
-cp .env.example .env                                  # Stripe, Checkr, Twilio, Firebase, Maps keys
+cp .env.example .env                                  # PayPal, Checkr, Twilio, Firebase, Maps keys
 npm install
 npm run migrate:up                                    # apply the schema (migrations, not a dump)
 npm run seed                                          # realistic Merrimack Valley data
 npm run create-admin -- ops@sparkle.app "Dana Osei"   # admins are never made over HTTP
 npm run dev                                           # http://localhost:8080
 npm run worker                                        # matching, payouts, ratings, retention
-stripe listen --forward-to localhost:8080/v1/webhooks/stripe
 ```
+
+PayPal has no CLI webhook forwarder the way `stripe listen` was — for local webhook testing, register a sandbox webhook pointed at an ngrok (or similar) tunnel to `localhost:8080/v1/webhooks/paypal` in the PayPal Developer Dashboard, or trigger events manually via the sandbox's webhook simulator.
 
 Apps: `cd mobile/customer_app && flutter run` (or `cleaner_app`). Both ship a fake repository, so they run before the backend does.
 

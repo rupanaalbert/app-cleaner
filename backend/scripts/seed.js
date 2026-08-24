@@ -168,14 +168,14 @@ async function seedCleaner(spec, hash) {
 
     await client.query(
       `INSERT INTO cleaner_profiles
-         (user_id, stripe_account_id, payouts_enabled, onboarding_status, bg_status,
+         (user_id, paypal_email, payouts_enabled, onboarding_status, bg_status,
           bg_completed_at, bg_expires_at, bio, years_experience, service_types,
           home_location, service_radius_km, is_available)
        VALUES ($1,$2,$3,$4,$5,
                CASE WHEN $5 = 'clear' THEN now() - interval '30 days' END,
                CASE WHEN $5 = 'clear' THEN now() + interval '335 days' END,
                $6,$7,$8, ST_SetSRID(ST_MakePoint($9,$10),4326)::geography, $11, $3)`,
-      [user.id, `acct_seed_${slug(spec.name)}`, spec.approved,
+      [user.id, `${slug(spec.name)}-seed@example.com`, spec.approved,
        spec.approved ? 'approved' : 'docs_submitted',
        spec.approved ? 'clear' : (spec.name.startsWith('Danil') ? 'consider' : 'pending'),
        `${spec.years} years of experience around ${place.city}.`, spec.years, spec.types,
@@ -223,8 +223,8 @@ async function seedCustomer(spec, hash) {
     }
 
     await client.query(
-      `INSERT INTO customer_profiles (user_id, stripe_customer_id) VALUES ($1,$2)`,
-      [user.id, `cus_seed_${slug(spec.name)}`]);
+      `INSERT INTO customer_profiles (user_id) VALUES ($1)`,
+      [user.id]);
 
     const { rows: [address] } = await client.query(
       `INSERT INTO addresses (user_id, label, line1, city, region, postal_code, location, access_notes)
@@ -287,16 +287,19 @@ async function seedBooking({ rules, service, customer, cleaner, status, daysAgo 
 
     if (done) {
       const { rows: [payment] } = await client.query(
-        `INSERT INTO payments (booking_id, customer_id, stripe_payment_intent_id, status,
-                               authorized_cents, captured_cents, application_fee_cents,
-                               authorized_at, captured_at)
-         VALUES ($1,$2,$3,'captured',$4,$4,$5, now() - interval '1 day', now()) RETURNING id`,
-        [booking.id, customer.id, `pi_seed_${booking.id.slice(0, 8)}`, booking.total_cents,
-         booking.commission_cents + booking.ts_fee_cents]);
+        `INSERT INTO payments (booking_id, customer_id, paypal_order_id, paypal_authorization_id,
+                               paypal_capture_id, status, authorized_cents, captured_cents,
+                               platform_fee_cents, authorized_at, captured_at)
+         VALUES ($1,$2,$3,$4,$5,'captured',$6,$6,$7, now() - interval '1 day', now()) RETURNING id`,
+        [booking.id, customer.id, `order_seed_${booking.id.slice(0, 8)}`,
+         `auth_seed_${booking.id.slice(0, 8)}`, `cap_seed_${booking.id.slice(0, 8)}`,
+         booking.total_cents, booking.commission_cents + booking.ts_fee_cents]);
       await client.query(
-        `INSERT INTO payouts (cleaner_id, booking_id, stripe_transfer_id, amount_cents, status)
-         VALUES ($1,$2,$3,$4,'paid')`,
-        [cleaner.id, booking.id, `tr_seed_${payment.id.slice(0, 8)}`, booking.payout_cents]);
+        `INSERT INTO payouts (cleaner_id, booking_id, paypal_payout_batch_id, paypal_payout_item_id,
+                              amount_cents, status, hold_until)
+         VALUES ($1,$2,$3,$4,$5,'paid', now() - interval '1 day')`,
+        [cleaner.id, booking.id, `batch_seed_${payment.id.slice(0, 8)}`,
+         `item_seed_${payment.id.slice(0, 8)}`, booking.payout_cents]);
     }
 
     return booking;

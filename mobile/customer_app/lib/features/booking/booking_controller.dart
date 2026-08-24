@@ -118,7 +118,14 @@ class BookingController extends ChangeNotifier {
     notifyListeners();
   }
 
-  Future<void> submit(String paymentMethodId) async {
+  /// The customer approves this order (a PayPal webview redirect, driven by
+  /// [BookingFlowScreen]) before [submit] is called with the resulting id.
+  Future<PaypalOrder> createPaypalOrder() {
+    assert(quote != null, 'createPaypalOrder is only called once a quote exists');
+    return repository.createPaypalOrder(quote!.id);
+  }
+
+  Future<void> submit(String paypalOrderId) async {
     if (quote == null || submitting) return;
     submitting = true;
     submitError = null;
@@ -127,7 +134,7 @@ class BookingController extends ChangeNotifier {
     try {
       confirmed = await repository.confirm(
         quoteId: quote!.id,
-        paymentMethodId: paymentMethodId,
+        paypalOrderId: paypalOrderId,
         draft: draft,
         idempotencyKey: _idempotencyKey,
       );
