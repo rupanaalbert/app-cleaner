@@ -93,6 +93,12 @@ export const config = {
     offerTtlSeconds: 90,
     maxRounds: 3,
     radiusExpansionFactor: 1.5,
+    // Upper bound on a cleaner's own service_radius_km (onboarding.routes.js's
+    // zod schema enforces this at write time). findCandidates' constant-radius
+    // index prefilter (matching.candidates.sql.js) relies on this being a true
+    // ceiling — raise it there too if you ever raise it here, or the prefilter
+    // can silently exclude a legitimately eligible cleaner.
+    maxServiceRadiusKm: 60,
     weights: { proximity: 0.35, quality: 0.30, reliability: 0.15, acceptance: 0.10, fairness: 0.10 },
     bayesian: { priorRating: 4.6, priorWeight: 10 },
     minTrailingRating: 4.3,     // below this: removed from dispatch, coaching

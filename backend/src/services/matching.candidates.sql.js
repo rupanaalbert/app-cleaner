@@ -3,14 +3,26 @@
 // what ships. Params, in order:
 //   $1 booking id        $2 radius multiplier   $3 prior rating
 //   $4 service code      $5 scheduled_at        $6 duration_min      $7 limit
+//   $8 max prefilter radius, metres (see below)
 //
-// Performance note for whoever load-tests this: the `ST_DWithin` bound is
-// `c.service_radius_km * 1000 * $2` — a per-row distance, not a constant. A GiST
-// index answers "within a FIXED distance of a point"; a per-row radius denies it
-// that, so this filter can fall back to a scan. If the plan shows a Seq Scan on
-// cleaner_profiles, the fix is a constant-radius prefilter the index CAN use
-// (e.g. `AND ST_DWithin(c.home_location, target.geo, <max_metres>)`) before the
-// exact per-row check refines it.
+// The exact eligibility bound is `c.service_radius_km * 1000 * $2` — a per-row
+// distance, not a constant. A GiST index answers "within a FIXED distance of a
+// point"; a per-row radius denies it that, so evaluated alone this filter forces
+// a Seq Scan on cleaner_profiles (confirmed via `npm run loadtest:matching`
+// before this fix landed).
+//
+// $8 is a constant-radius prefilter the index CAN use: it must be an upper bound
+// on what the per-row check could ever allow, i.e.
+// `config.matching.maxServiceRadiusKm * 1000 * radiusMultiplier` (computed by the
+// caller — matching.service.js and loadtest-matching.js both do this the same
+// way). Because it's a bind parameter, not a per-row expression, the planner
+// treats it as constant for the query and can push it into the GiST index scan;
+// the exact per-row ST_DWithin then refines that candidate set down to each
+// cleaner's real radius. If `config.matching.maxServiceRadiusKm` ever changes,
+// $8 changes with it automatically — nothing here needs editing. What WOULD
+// silently break correctness is a write path that sets service_radius_km above
+// that constant outside the zod-validated route; migration 0004 makes that a
+// database-level CHECK so it can't happen quietly.
 export const FIND_CANDIDATES_SQL = `
       WITH target AS (
         SELECT a.location AS geo
@@ -48,6 +60,11 @@ export const FIND_CANDIDATES_SQL = `
         AND (c.suspended_until IS NULL OR c.suspended_until < now())
         AND COALESCE(s.is_dispatchable, true) = true
         AND $4 = ANY (c.service_types)
+        -- Index-usable prefilter first (see the header comment for $8), then the
+        -- exact per-row bound. Both are needed: dropping the prefilter loses the
+        -- GiST index; dropping the exact check would offer jobs outside a
+        -- cleaner's real radius.
+        AND ST_DWithin(c.home_location, target.geo, $8)
         AND ST_DWithin(c.home_location, target.geo, c.service_radius_km * 1000 * $2)
         -- availability window (cleaner-local minutes-of-day)
         AND EXISTS (

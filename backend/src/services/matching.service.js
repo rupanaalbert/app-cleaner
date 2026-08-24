@@ -25,10 +25,14 @@ export class MatchingService {
    * Matrix call for the finalists.
    */
   static async findCandidates(booking, { radiusMultiplier = 1, limit = 30 } = {}) {
+    // See matching.candidates.sql.js's header: this must stay an upper bound on
+    // service_radius_km * 1000 * radiusMultiplier for every cleaner, or the
+    // prefilter silently drops a legitimately eligible one.
+    const maxPrefilterRadiusMetres = config.matching.maxServiceRadiusKm * 1000 * radiusMultiplier;
     const { rows } = await query(
       FIND_CANDIDATES_SQL,
       [booking.id, radiusMultiplier, bayesian.priorRating, booking.service_code,
-       booking.scheduled_at, booking.duration_min, limit],
+       booking.scheduled_at, booking.duration_min, limit, maxPrefilterRadiusMetres],
     );
     return rows;
   }

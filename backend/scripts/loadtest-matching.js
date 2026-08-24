@@ -13,10 +13,12 @@
  * plus three correlated subqueries per candidate; this shows how that plan
  * behaves at 6,000 before a customer is the one waiting on it.
  *
- * The ST_DWithin bound is a per-row radius, which a GiST index can't satisfy —
- * so the interesting question the plan answers is whether cleaner_profiles is
- * scanned or index-accessed. All synthetic rows are tagged `loadtest-*` and
- * removed on exit unless --keep.
+ * The exact eligibility bound is a per-row radius, which a GiST index can't
+ * satisfy on its own — matching.candidates.sql.js adds a constant-radius
+ * prefilter the index CAN use ahead of it, so the interesting question the plan
+ * answers is whether that prefilter is actually getting index-accessed
+ * (`cleaner_home_gix`) rather than falling back to a Seq Scan. All synthetic
+ * rows are tagged `loadtest-*` and removed on exit unless --keep.
  */
 import { pool, query } from '../src/db/pool.js';
 import { config } from '../src/config/index.js';
@@ -144,9 +146,11 @@ function verdict(planText, execMs, matched) {
   const usesHomeGix = /cleaner_home_gix/i.test(planText);
   if (seqScan) {
     console.log('⚠ Seq Scan on cleaner_profiles — the radius filter is not index-accelerated.');
-    console.log('  Expected: the ST_DWithin bound is per-row (service_radius_km * …), which a GiST');
-    console.log('  index can\'t satisfy. Add a constant-radius prefilter the index CAN use before the');
-    console.log('  exact per-row check (see the note in matching.candidates.sql.js).');
+    console.log('  matching.candidates.sql.js already carries a constant-radius prefilter meant');
+    console.log('  to prevent this ($8, an index-usable upper bound ahead of the exact per-row');
+    console.log('  check) — a Seq Scan here means either the planner declined it at this table');
+    console.log('  size (check the plan for why) or the prefilter param got dropped/miscomputed');
+    console.log('  by a caller. Not the expected state — treat this as a regression.');
   } else if (usesHomeGix) {
     console.log('✓ cleaner_home_gix used for the radius scan.');
   }
@@ -165,11 +169,14 @@ async function main() {
   console.log('• ANALYZE…');
   await query('ANALYZE cleaner_profiles, cleaner_availability, cleaner_rating_snapshot, users, bookings');
 
+  const radiusMultiplier = 1; // round 1
   const params = [
-    booking.id, 1, config.matching.bayesian.priorRating, booking.service_code,
+    booking.id, radiusMultiplier, config.matching.bayesian.priorRating, booking.service_code,
     // 30 = findCandidates' default fetch limit (dispatch scores these, then
-    // slices to broadcastSize); round 1, so radius multiplier 1.
+    // slices to broadcastSize).
     booking.scheduled_at, booking.duration_min, 30,
+    // $8 — same derivation matching.service.js uses; see matching.candidates.sql.js.
+    config.matching.maxServiceRadiusKm * 1000 * radiusMultiplier,
   ];
 
   // Warm once (plan cache, buffers), then measure.

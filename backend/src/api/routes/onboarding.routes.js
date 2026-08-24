@@ -3,6 +3,7 @@ import { z } from 'zod';
 import { requireAuth, requireRole } from '../../middleware/auth.js';
 import { validate } from '../../middleware/validate.js';
 import { query } from '../../db/pool.js';
+import { config } from '../../config/index.js';
 import { OnboardingService } from '../../services/onboarding.service.js';
 
 const router = Router();
@@ -17,7 +18,7 @@ router.patch('/onboarding/profile',
     bio: z.string().max(1000).optional(),
     years_experience: z.number().int().min(0).max(60).optional(),
     service_types: z.array(z.enum(['standard', 'deep'])).min(1).optional(),
-    service_radius_km: z.number().min(2).max(60).optional(),
+    service_radius_km: z.number().min(2).max(config.matching.maxServiceRadiusKm).optional(),
     lat: z.number().min(-90).max(90).optional(),
     lng: z.number().min(-180).max(180).optional(),
   })),
