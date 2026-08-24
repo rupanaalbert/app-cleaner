@@ -145,20 +145,33 @@ export class WebhookService {
  * transaction), never the pool directly — that's what lets the effect and the
  * processed stamp commit together.
  *
- * `PAYMENT.CAPTURE.REFUNDED` and `CUSTOMER.DISPUTE.CREATED`'s exact resource
- * shape below follows PayPal's documented webhook payloads but hasn't been
- * exercised against a live sandbox event yet — confirm in the Phase 0 spike
- * and correct here if reality differs.
+ * `PAYMENT.CAPTURE.REFUNDED` was exercised against a live sandbox event (see
+ * CLAUDE.md's Known stubs) and corrected to read the cumulative refunded
+ * total rather than assume full-refund. `CUSTOMER.DISPUTE.CREATED`'s
+ * resource shape below still only follows PayPal's documented payload —
+ * filing a sandbox dispute wasn't reachable in that spike — so it remains
+ * unconfirmed; correct here if reality differs.
  */
 export async function handlePaypalEvent(client, event) {
   const resource = event.resource ?? {};
   switch (event.event_type) {
     case 'PAYMENT.CAPTURE.REFUNDED': {
+      // resource is the refund, not the capture — `links[rel=up]` is how you
+      // get back to the capture it applies to. `total_refunded_amount` is
+      // PayPal's own running total for the capture (not just this refund),
+      // confirmed against a live sandbox event: a $20 refund on a $75 capture
+      // reported total_refunded_amount = 20.00, not 75.00. Writing that
+      // absolute total (falling back to `amount` if the breakdown is ever
+      // missing) rather than assuming "refunded" means "fully refunded" is
+      // what makes this safe for partial refunds and safe to replay.
       const captureId = resource.links?.find((l) => l.rel === 'up')?.href?.split('/').pop();
+      const totalRefundedValue = resource.seller_payable_breakdown?.total_refunded_amount?.value ?? resource.amount?.value;
+      const refundedCents = Math.round(Number(totalRefundedValue) * 100);
       await client.query(
-        `UPDATE payments SET refunded_cents = captured_cents, status = 'refunded'
+        `UPDATE payments SET refunded_cents = $2,
+                status = CASE WHEN $2 >= captured_cents THEN 'refunded' ELSE 'partially_refunded' END
           WHERE paypal_capture_id = $1`,
-        [captureId ?? resource.id],
+        [captureId ?? resource.id, refundedCents],
       );
       break;
     }
