@@ -43,7 +43,7 @@ Next DB change: `npm run migrate:create -- add_whatever`, write both `up` and `d
 - [x] Optimistic approve / reject / suspend / resolve with rollback; the three gate `422`s (`BACKGROUND_NOT_CLEAR`, `DOCUMENTS_PENDING`, `PAYOUTS_DISABLED`) and `REASON_REQUIRED` surface in the toast.
 - [x] Keyboard model intact (`J`/`K`, `A`/`R`/`S`, `1`/`2`, `?`); suspend now also collects a duration.
 
-Not built here (no bundler in-repo) and unverified in a browser — see the caveat when this landed. A follow-up could add a UI for the item-3 webhook dead-letter endpoints.
+Render pass now done against a fixture server (see CLAUDE.md's Known stubs) — the "no bundler" note was stale, `admin/` already had a Vite scaffold. A follow-up could add a UI for the item-3 webhook dead-letter endpoints.
 
 ## 5. Email and SMS delivery — **done**
 
