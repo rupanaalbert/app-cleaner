@@ -209,7 +209,7 @@ class _Pill extends StatelessWidget {
   @override
   Widget build(BuildContext context) => Container(
         padding: const EdgeInsets.symmetric(horizontal: Sparkle.s2, vertical: 3),
-        decoration: BoxDecoration(color: tone.withOpacity(0.10), borderRadius: BorderRadius.circular(6)),
+        decoration: BoxDecoration(color: tone.withValues(alpha: 0.10), borderRadius: BorderRadius.circular(6)),
         child: Text(label,
             style: TextStyle(fontSize: 10, fontWeight: FontWeight.w700, letterSpacing: 0.8, color: tone)),
       );

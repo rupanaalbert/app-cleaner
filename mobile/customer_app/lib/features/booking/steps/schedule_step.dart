@@ -126,20 +126,26 @@ class _ScheduleStepState extends State<ScheduleStep> {
           child: Text('How do we get in?', style: Theme.of(context).textTheme.titleMedium),
         ),
         const SizedBox(height: Sparkle.s2),
-        for (final entry in const {
-          'home': 'I\'ll be home',
-          'doorman': 'Doorman or front desk',
-          'lockbox': 'Lockbox or keypad',
-          'hidden_key': 'Key is hidden on site',
-        }.entries)
-          RadioListTile<String>(
-            value: entry.key,
-            groupValue: c.draft.entryMethod,
-            onChanged: (v) => c.setEntryMethod(v!),
-            activeColor: Sparkle.seafoam,
-            title: Text(entry.value, style: const TextStyle(fontSize: 15)),
-            contentPadding: const EdgeInsets.symmetric(horizontal: Sparkle.s4),
+        RadioGroup<String>(
+          groupValue: c.draft.entryMethod,
+          onChanged: (v) => c.setEntryMethod(v!),
+          child: Column(
+            children: [
+              for (final entry in const {
+                'home': 'I\'ll be home',
+                'doorman': 'Doorman or front desk',
+                'lockbox': 'Lockbox or keypad',
+                'hidden_key': 'Key is hidden on site',
+              }.entries)
+                RadioListTile<String>(
+                  value: entry.key,
+                  activeColor: Sparkle.seafoam,
+                  title: Text(entry.value, style: const TextStyle(fontSize: 15)),
+                  contentPadding: const EdgeInsets.symmetric(horizontal: Sparkle.s4),
+                ),
+            ],
           ),
+        ),
       ],
     );
   }

@@ -69,7 +69,7 @@ The cleaner app had Job Discovery and onboarding; the working-a-job screens were
 - [x] `EarningsScreen` — take-home in amber from `GET /cleaner/earnings`, week/month/all-time, next payout.
 - [x] Repositories `JobsRepository` / `EarningsRepository` (+ `HttpJobsRepository`/`HttpEarningsRepository` and fakes), `Locator` abstraction, and a three-tab `HomeShell` in `main.dart`.
 
-Not compiled or run here (no Flutter toolchain) — needs `flutter analyze` + a device pass. `image_picker` was added to `pubspec.yaml` for photo capture.
+**`flutter analyze` verified clean (2026-08-25)** — see the note under item 8 below (installed the SDK the same session; both apps analyzed together). Still no device pass.
 
 ## 8. Chat — **done**
 
@@ -81,6 +81,14 @@ Firebase rules for `threads/{bookingId}` were written and enforced; nothing cons
 - [x] Entry points: cleaner active-job app bar, customer tracking screen (once a cleaner is assigned), both gated on an injected repo so the fakes still run.
 
 Not compiled or run here (no Flutter toolchain). Also unaddressed: the same custom-token sign-in should back the existing tracking screen (which reads RTDB but never signs in) — pre-existing, out of this item's scope.
+
+**`flutter analyze` verified clean (2026-08-25).** Installed the Flutter stable SDK (`git clone flutter/flutter -b stable`, matching CI's `subosito/flutter-action@v2 channel: stable`) — this repo's CI `mobile` matrix job (`flutter analyze` on both apps) has failed on every run since it existed, same story as `schema`. Both apps' issues turned out to be pure `info`-level deprecation lints, no actual type/compile errors — `flutter analyze` still exits non-zero on info-only findings, which is what was failing CI:
+
+- Both apps: `chat_repository.dart` imported `firebase_core` unnecessarily (everything used is re-exported by `firebase_auth`) — removed.
+- `cleaner_app`: five `Color.withOpacity()` calls → `.withValues(alpha:)` (precision-loss deprecation), and `Switch`'s `activeColor` → `activeThumbColor`.
+- `customer_app`: `schedule_step.dart`'s per-`RadioListTile` `groupValue`/`onChanged` (the old repeated-per-item Radio API) replaced with a single `RadioGroup<String>` ancestor wrapping the `for`-generated tiles — the real migration, not just a rename, since the new Radio API manages group state at one place above the items instead of on each one.
+
+Both `flutter analyze` runs now exit 0, "No issues found!". Not yet re-pushed to confirm the CI `mobile` job goes green — do that next, and a device/emulator pass is still outstanding for both apps.
 
 ## 9. Observability — **done**
 
@@ -125,4 +133,4 @@ All of the above verified together: unit suite (26/26), integration suite (11/11
 
 **Pushed (2026-08-25) and checked against real CI**, not just local Postgres — this caught one more bug the local runs above couldn't, because a local `.env` was masking it: CI's `schema` job has failed on every run since it existed (confirmed by checking prior runs' per-job results, all the way back to the initial commit), at `node backend/scripts/seed.js`. `config/index.js` requires `REDIS_URL`, both JWT secrets, and all three PayPal vars with no defaults — `test/integration/*.test.js` already works around this via `test/helpers/env.js` (imported first, before any `src/` module loads config), but `scripts/seed.js` had no equivalent, and CI's `schema` job step never set those vars (it only sets `DATABASE_URL`/`PGPASSWORD` — seed.js touches neither Redis nor PayPal). Added `scripts/helpers/env.js`, the same pattern, imported first in `seed.js`. Reproduced the exact failure locally (fresh db, `.env` moved aside, only `DATABASE_URL` set) before and after the fix to confirm.
 
-Post-push CI state: `unit` and `integration` are now green (previously `integration` also failed, on the same migration bugs above — this is a real improvement, not just local-only). `schema` should go green on the next push with this fix. `mobile (cleaner_app)` / `mobile (customer_app)` still fail at `flutter analyze` — expected, matches the caveat on items 6-8 below (never run through a Flutter toolchain) and is unrelated to this item.
+Post-push CI state: `unit`, `integration`, and `schema` are all green (confirmed on the push after this fix — `schema` had failed on every run since it existed). `mobile (cleaner_app)` / `mobile (customer_app)` still failed as of that push, at `flutter analyze` — see items 6-8 below for that fix.

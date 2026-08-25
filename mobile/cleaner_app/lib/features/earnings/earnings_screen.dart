@@ -140,7 +140,7 @@ class _EarningsScreenState extends State<EarningsScreen> {
     }
 
     return Container(
-      decoration: BoxDecoration(color: Sparkle.hairline.withOpacity(0.5), borderRadius: BorderRadius.circular(13)),
+      decoration: BoxDecoration(color: Sparkle.hairline.withValues(alpha: 0.5), borderRadius: BorderRadius.circular(13)),
       child: Row(children: [
         seg(_Period.week, 'This week'),
         seg(_Period.month, 'This month'),
@@ -202,7 +202,7 @@ class _EarningsScreenState extends State<EarningsScreen> {
         children: [
           Container(
             width: 40, height: 40,
-            decoration: BoxDecoration(color: Sparkle.payout.withOpacity(0.12), borderRadius: BorderRadius.circular(10)),
+            decoration: BoxDecoration(color: Sparkle.payout.withValues(alpha: 0.12), borderRadius: BorderRadius.circular(10)),
             child: const Icon(Icons.account_balance_outlined, color: Sparkle.payout, size: 20),
           ),
           const SizedBox(width: Sparkle.s3),

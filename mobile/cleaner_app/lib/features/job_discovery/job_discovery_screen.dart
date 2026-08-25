@@ -224,7 +224,7 @@ class _JobDiscoveryScreenState extends State<JobDiscoveryScreen> {
               Switch(
                 value: _online,
                 onChanged: _toggleOnline,
-                activeColor: Colors.white,
+                activeThumbColor: Colors.white,
                 activeTrackColor: Sparkle.seafoam,
               ),
             ],
@@ -441,7 +441,7 @@ class _Chip extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: Sparkle.s2, vertical: 3),
       decoration: BoxDecoration(
-        color: tone.withOpacity(0.10),
+        color: tone.withValues(alpha: 0.10),
         borderRadius: BorderRadius.circular(6),
       ),
       child: Text(label,
