@@ -1,6 +1,8 @@
+import 'dart:convert';
 import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
+import 'package:http/http.dart' as http;
 
 import 'core/theme.dart';
 import 'data/booking_repository.dart';
@@ -8,22 +10,38 @@ import 'features/booking/booking_flow_screen.dart';
 
 void main() => runApp(const SparkleCustomerApp());
 
+// 10.0.2.2 is the Android emulator's alias for the host machine's localhost —
+// `npm run dev` in backend/ needs to already be running there.
+const _devApiBaseUrl = 'http://10.0.2.2:8080';
+
+// There's no login screen wired up yet, so this logs in with a seeded dev
+// account on every token request rather than caching — simplest thing that
+// can't hand the app a stale/expired access token. Swap for a real session
+// once auth exists.
+Future<String> _devTokenProvider() async {
+  final res = await http.post(
+    Uri.parse('$_devApiBaseUrl/v1/auth/login'),
+    headers: {'content-type': 'application/json'},
+    body: jsonEncode({'email': 'priya.raman@example.com', 'password': 'sparkle-dev-password'}),
+  );
+  if (res.statusCode != 200) throw StateError('dev login failed: ${res.statusCode} ${res.body}');
+  return (jsonDecode(res.body) as Map<String, dynamic>)['access_token'] as String;
+}
+
 class SparkleCustomerApp extends StatelessWidget {
   const SparkleCustomerApp({super.key});
 
   @override
   Widget build(BuildContext context) {
-    // Swap for HttpBookingRepository(baseUrl: ..., tokenProvider: ...) once
-    // auth is wired. The fake mirrors the real pricing rules so the flow can
-    // be demoed and widget-tested without a backend.
     return MaterialApp(
       title: 'Sparkle',
       theme: Sparkle.theme(),
       debugShowCheckedModeBanner: false,
       home: BookingFlowScreen(
-        repository: FakeBookingRepository(),
-        propertyId: '018f0000-0000-7000-8000-000000000001',
-        addressLine: '14 Pleasant St, Methuen',
+        repository: HttpBookingRepository(baseUrl: _devApiBaseUrl, tokenProvider: _devTokenProvider),
+        // Priya Raman's seeded property — swap once a real property picker exists.
+        propertyId: '01a035ac-a36f-7425-aa64-ab3dc61924b8',
+        addressLine: '10 Pleasant St, Methuen',
       ),
     );
   }
