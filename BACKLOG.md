@@ -104,7 +104,9 @@ Scaffolding itself introduced a regression, caught before pushing: `flutter crea
 
 **Environment note, not a code bug:** the `google_apis` Android 34 system image intermittently denies the app SELinux read access to `/proc/sys/vm/max_map_count`, which crashes Dart isolate creation before anything renders (`Could not create root isolate`). Switching to an `aosp_atd` system image avoided it. If this recurs on `google_apis`, either use `aosp_atd`/`google_atd` instead, or (needs a user-approved Bash permission, not grantable mid-session) `adb shell setenforce 0` on the emulator.
 
-**Not yet done:** the same device pass for `customer_app` (it got the same platform scaffolding and font assets, but hasn't been run) and Firebase config (`google-services.json`/`GoogleService-Info.plist`) is still a placeholder, so the Firebase-backed features (chat, realtime tracking) will need that wired up before they'll actually connect.
+**`customer_app` device pass done too (2026-08-25).** Ran cleanly on the first try — no code changes needed. Walked through service selection, property details, and the scheduling step (including the entry-method radio tiles, which exercises the `RadioGroup` migration from the `flutter analyze` fixes above): selection moves correctly between tiles, confirming the group-state migration actually works interactively, not just renders. Zero overflow errors or exceptions across the whole path.
+
+**Still not done:** neither app has Firebase config (`google-services.json`/`GoogleService-Info.plist` — still a placeholder), so the Firebase-backed features (chat, realtime tracking) will need that wired up before they'll actually connect. Screens beyond what was walked through (checkout/payment, chat, active-job, earnings) haven't had their own device pass yet either.
 
 ## 9. Observability — **done**
 
