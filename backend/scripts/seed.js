@@ -171,9 +171,9 @@ async function seedCleaner(spec, hash) {
          (user_id, paypal_email, payouts_enabled, onboarding_status, bg_status,
           bg_completed_at, bg_expires_at, bio, years_experience, service_types,
           home_location, service_radius_km, is_available)
-       VALUES ($1,$2,$3,$4,$5,
-               CASE WHEN $5 = 'clear' THEN now() - interval '30 days' END,
-               CASE WHEN $5 = 'clear' THEN now() + interval '335 days' END,
+       VALUES ($1,$2,$3,$4,$5::bg_check_status,
+               CASE WHEN $5::bg_check_status = 'clear' THEN now() - interval '30 days' END,
+               CASE WHEN $5::bg_check_status = 'clear' THEN now() + interval '335 days' END,
                $6,$7,$8, ST_SetSRID(ST_MakePoint($9,$10),4326)::geography, $11, $3)`,
       [user.id, `${slug(spec.name)}-seed@example.com`, spec.approved,
        spec.approved ? 'approved' : 'docs_submitted',
@@ -273,12 +273,12 @@ async function seedBooking({ rules, service, customer, cleaner, status, daysAgo 
                              subtotal_cents, ts_fee_cents, tax_cents, total_cents,
                              commission_cents, payout_cents,
                              matched_at, en_route_at, arrived_at, started_at, completed_at)
-       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,
+       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9::integer,$10,$11,$12,$13,$14,$15,
                CASE WHEN $3::uuid IS NULL THEN NULL ELSE $8::timestamptz - interval '2 days' END,
                CASE WHEN $16 THEN $8::timestamptz - interval '30 minutes' END,
                CASE WHEN $16 THEN $8::timestamptz - interval '5 minutes' END,
                CASE WHEN $16 THEN $8::timestamptz END,
-               CASE WHEN $16 THEN $8::timestamptz + ($9 || ' minutes')::interval END)
+               CASE WHEN $16 THEN $8::timestamptz + ($9::text || ' minutes')::interval END)
        RETURNING *`,
       [ref(), customer.id, cleaner?.id ?? null, customer.propertyId, q.id, service.code, status,
        scheduledAt, quote.duration_min, quote.subtotal_cents, quote.ts_fee_cents, quote.tax_cents,
@@ -291,15 +291,15 @@ async function seedBooking({ rules, service, customer, cleaner, status, daysAgo 
                                paypal_capture_id, status, authorized_cents, captured_cents,
                                platform_fee_cents, authorized_at, captured_at)
          VALUES ($1,$2,$3,$4,$5,'captured',$6,$6,$7, now() - interval '1 day', now()) RETURNING id`,
-        [booking.id, customer.id, `order_seed_${booking.id.slice(0, 8)}`,
-         `auth_seed_${booking.id.slice(0, 8)}`, `cap_seed_${booking.id.slice(0, 8)}`,
+        [booking.id, customer.id, `order_seed_${booking.id.slice(-8)}`,
+         `auth_seed_${booking.id.slice(-8)}`, `cap_seed_${booking.id.slice(-8)}`,
          booking.total_cents, booking.commission_cents + booking.ts_fee_cents]);
       await client.query(
         `INSERT INTO payouts (cleaner_id, booking_id, paypal_payout_batch_id, paypal_payout_item_id,
                               amount_cents, status, hold_until)
          VALUES ($1,$2,$3,$4,$5,'paid', now() - interval '1 day')`,
-        [cleaner.id, booking.id, `batch_seed_${payment.id.slice(0, 8)}`,
-         `item_seed_${payment.id.slice(0, 8)}`, booking.payout_cents]);
+        [cleaner.id, booking.id, `batch_seed_${payment.id.slice(-8)}`,
+         `item_seed_${payment.id.slice(-8)}`, booking.payout_cents]);
     }
 
     return booking;

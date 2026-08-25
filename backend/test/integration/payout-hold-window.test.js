@@ -26,6 +26,7 @@ connection.disconnect();
 
 const createdUserIds = [];
 const createdPropertyIds = [];
+const createdBookingIds = [];
 
 async function makeCleaner(paypalEmail) {
   const { rows: [u] } = await query(
@@ -83,6 +84,7 @@ async function makeBooking({ customerId, cleanerId }) {
      RETURNING id`,
     [`SPK-HW-${randomUUID().slice(0, 6)}`, customerId, cleanerId, prop.id, quote.id],
   );
+  createdBookingIds.push(booking.id);
   return booking.id;
 }
 
@@ -98,6 +100,16 @@ before(async () => {
 });
 
 after(async () => {
+  // Children before parents: payouts and bookings hold RESTRICT refs, same
+  // reasoning as booking-state-machine.test.js's teardown.
+  if (createdBookingIds.length) {
+    await query('DELETE FROM payouts  WHERE booking_id = ANY($1::uuid[])', [createdBookingIds]);
+    await query('DELETE FROM bookings WHERE id = ANY($1::uuid[])', [createdBookingIds]);
+  }
+  if (createdUserIds.length) {
+    await query('DELETE FROM quotes     WHERE customer_id = ANY($1::uuid[])', [createdUserIds]);
+    await query('DELETE FROM properties WHERE customer_id = ANY($1::uuid[])', [createdUserIds]);
+  }
   if (createdPropertyIds.length) {
     await query('DELETE FROM addresses WHERE id = ANY($1::uuid[])', [createdPropertyIds]);
   }

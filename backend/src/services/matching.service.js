@@ -95,20 +95,21 @@ export class MatchingService {
    */
   static async acceptOffer(offerId, cleanerId) {
     return withTransaction(async (client) => {
+      // Unlocked on purpose: existence/expiry don't race with a concurrent
+      // accept, and reading this without FOR UPDATE means a losing cleaner
+      // never holds a lock on their own offer row for the winner's later
+      // "supersede the others" UPDATE to contend with.
       const { rows: [offer] } = await client.query(
-        `SELECT o.*, b.status AS booking_status
-           FROM booking_offers o
-           JOIN bookings b ON b.id = o.booking_id
-          WHERE o.id = $1 AND o.cleaner_id = $2
-          FOR UPDATE OF o`,
+        `SELECT id, booking_id, expires_at FROM booking_offers WHERE id = $1 AND cleaner_id = $2`,
         [offerId, cleanerId],
       );
       if (!offer) throw AppError.notFound('Offer');
       if (offer.expires_at < new Date()) throw new AppError(410, 'OFFER_EXPIRED', 'This offer has expired');
-      if (offer.status !== 'sent' && offer.status !== 'viewed') {
-        throw AppError.conflict('OFFER_CLOSED', 'This offer is no longer open');
-      }
 
+      // The deterministic race arbiter: SKIP LOCKED means a losing cleaner's
+      // claim returns empty immediately rather than blocking, so the loser
+      // always gets OFFER_TAKEN here — never a lock-timing-dependent error
+      // from the offer row below, which only the winner ever reaches.
       const { rows: [booking] } = await client.query(
         `SELECT * FROM bookings
           WHERE id = $1 AND status = 'pending_match'
@@ -116,6 +117,12 @@ export class MatchingService {
         [offer.booking_id],
       );
       if (!booking) throw AppError.conflict('OFFER_TAKEN', 'Another cleaner already took this job');
+
+      const { rows: [lockedOffer] } = await client.query(
+        `SELECT status FROM booking_offers WHERE id = $1 FOR UPDATE`, [offerId]);
+      if (lockedOffer.status !== 'sent' && lockedOffer.status !== 'viewed') {
+        throw AppError.conflict('OFFER_CLOSED', 'This offer is no longer open');
+      }
 
       await client.query(
         `UPDATE bookings

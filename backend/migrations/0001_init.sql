@@ -6,6 +6,7 @@
 CREATE EXTENSION IF NOT EXISTS postgis;
 CREATE EXTENSION IF NOT EXISTS pgcrypto;
 CREATE EXTENSION IF NOT EXISTS pg_trgm;
+CREATE EXTENSION IF NOT EXISTS citext;
 
 -- UUIDv7-ish: time-ordered ids keep btree indexes and future sharding sane.
 CREATE OR REPLACE FUNCTION uuid_generate_v7() RETURNS uuid AS $$
@@ -266,8 +267,15 @@ CREATE TRIGGER bookings_touch BEFORE UPDATE ON bookings FOR EACH ROW EXECUTE FUN
 
 -- One cleaner cannot hold two overlapping live jobs.
 CREATE EXTENSION IF NOT EXISTS btree_gist;
+-- timestamptz + interval is STABLE, not IMMUTABLE (the operator doesn't know
+-- the interval carries no months/days, which are the only DST-sensitive
+-- parts) — GENERATED columns require IMMUTABLE, so wrap it in a function
+-- where we can assert that in good conscience: duration_min is minutes only.
+CREATE FUNCTION booking_time_span(p_scheduled_at timestamptz, p_duration_min integer)
+  RETURNS tstzrange LANGUAGE sql IMMUTABLE AS
+  $$ SELECT tstzrange(p_scheduled_at, p_scheduled_at + (p_duration_min || ' minutes')::interval) $$;
 ALTER TABLE bookings ADD COLUMN time_span tstzrange
-  GENERATED ALWAYS AS (tstzrange(scheduled_at, scheduled_at + (duration_min || ' minutes')::interval)) STORED;
+  GENERATED ALWAYS AS (booking_time_span(scheduled_at, duration_min)) STORED;
 ALTER TABLE bookings ADD CONSTRAINT no_double_booking
   EXCLUDE USING gist (cleaner_id WITH =, time_span WITH &&)
   WHERE (status IN ('assigned','en_route','arrived','in_progress'));
