@@ -110,10 +110,10 @@ class _PayoutsStepScreenState extends State<PayoutsStepScreen> {
                   ),
                   if (!verified) ...[
                     const SizedBox(height: Sparkle.s4),
-                    Text(
+                    const Text(
                       'Payouts go to this PayPal email — no bank details, no document upload. '
                       'We send a one-cent deposit to confirm it before turning payouts on.',
-                      style: const TextStyle(fontSize: 13, color: Sparkle.inkSoft, height: 1.4),
+                      style: TextStyle(fontSize: 13, color: Sparkle.inkSoft, height: 1.4),
                     ),
                     const SizedBox(height: Sparkle.s4),
                     Form(
@@ -151,9 +151,9 @@ class _PayoutsStepScreenState extends State<PayoutsStepScreen> {
                     ),
                     if (pending) ...[
                       const SizedBox(height: Sparkle.s3),
-                      Text(
+                      const Text(
                         'Pull down to refresh once you\'ve gotten the deposit — usually just a few minutes.',
-                        style: const TextStyle(fontSize: 12, color: Sparkle.inkSoft, height: 1.4),
+                        style: TextStyle(fontSize: 12, color: Sparkle.inkSoft, height: 1.4),
                       ),
                     ],
                   ],

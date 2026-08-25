@@ -95,9 +95,9 @@ class OnboardingState {
       readyToSubmit: json['ready_to_submit'] as bool,
       submitted: json['submitted'] as bool,
       documents: slots,
-      availableDays: [
+      availableDays: {
         for (final w in (json['availability'] as List)) (w as Map)['day_of_week'] as int,
-      ].toSet().toList()
+      }.toList()
         ..sort(),
       steps: [
         for (final key in ['profile', 'documents', 'payouts', 'background_check'])

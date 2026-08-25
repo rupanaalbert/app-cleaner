@@ -189,7 +189,7 @@ class _JobDiscoveryScreenState extends State<JobDiscoveryScreen> {
   Widget _header() {
     return SliverAppBar(
       pinned: true,
-      expandedHeight: 132,
+      expandedHeight: 144,
       backgroundColor: Sparkle.marine,
       foregroundColor: Colors.white,
       flexibleSpace: FlexibleSpaceBar(
@@ -208,24 +208,29 @@ class _JobDiscoveryScreenState extends State<JobDiscoveryScreen> {
           child: Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Text(_online ? 'Accepting jobs' : 'Not accepting jobs',
-                      style: const TextStyle(color: Colors.white, fontSize: 15, fontWeight: FontWeight.w600)),
-                  const SizedBox(height: 2),
-                  Text(
-                    _online ? 'We\'ll notify you when work comes in' : 'Turn on to start receiving offers',
-                    style: const TextStyle(color: Color(0xFFA9C6CD), fontSize: 13),
-                  ),
-                ],
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Text(_online ? 'Accepting jobs' : 'Not accepting jobs',
+                        style: const TextStyle(color: Colors.white, fontSize: 15, fontWeight: FontWeight.w600)),
+                    const SizedBox(height: 2),
+                    Text(
+                      _online ? 'We\'ll notify you when work comes in' : 'Turn on to start receiving offers',
+                      style: const TextStyle(color: Color(0xFFA9C6CD), fontSize: 13),
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ],
+                ),
               ),
+              const SizedBox(width: Sparkle.s2),
               Switch(
                 value: _online,
                 onChanged: _toggleOnline,
                 activeThumbColor: Colors.white,
                 activeTrackColor: Sparkle.seafoam,
+                materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
               ),
             ],
           ),
@@ -296,13 +301,12 @@ class _OfferCard extends StatelessWidget {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Row(
+                    Wrap(
+                      spacing: Sparkle.s1,
+                      runSpacing: Sparkle.s1,
                       children: [
                         if (offer.isDeepClean) const _Chip(label: 'DEEP CLEAN', tone: Sparkle.marine),
-                        if (offer.hasPets) ...[
-                          const SizedBox(width: Sparkle.s1),
-                          const _Chip(label: 'PETS', tone: Sparkle.inkSoft),
-                        ],
+                        if (offer.hasPets) const _Chip(label: 'PETS', tone: Sparkle.inkSoft),
                       ],
                     ),
                     const SizedBox(height: Sparkle.s2),
@@ -423,7 +427,10 @@ class _ExpiryRing extends StatelessWidget {
                 ),
               ),
             ),
-            Padding(padding: const EdgeInsets.all(Sparkle.s3), child: child),
+            Padding(
+              padding: const EdgeInsets.all(Sparkle.s3),
+              child: FittedBox(fit: BoxFit.scaleDown, child: child),
+            ),
           ],
         ),
       ),

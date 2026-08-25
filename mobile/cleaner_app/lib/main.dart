@@ -104,7 +104,7 @@ class _HomeShellState extends State<HomeShell> {
                 imageQuality: 70,
                 maxWidth: 1600,
               );
-              return file == null ? null : file.readAsBytes();
+              return file?.readAsBytes();
             },
           ),
         ));

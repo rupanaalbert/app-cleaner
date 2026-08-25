@@ -230,12 +230,12 @@ class _PrivacyNote extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Row(
+    return const Row(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const Icon(Icons.lock_outline, size: 16, color: Sparkle.inkSoft),
-        const SizedBox(width: Sparkle.s2),
-        const Expanded(
+        Icon(Icons.lock_outline, size: 16, color: Sparkle.inkSoft),
+        SizedBox(width: Sparkle.s2),
+        Expanded(
           child: Text(
             'Documents upload straight to encrypted storage and are only visible to the team member '
             'reviewing your application. Customers never see them.',

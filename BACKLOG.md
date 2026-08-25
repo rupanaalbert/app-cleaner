@@ -88,7 +88,23 @@ Not compiled or run here (no Flutter toolchain). Also unaddressed: the same cust
 - `cleaner_app`: five `Color.withOpacity()` calls → `.withValues(alpha:)` (precision-loss deprecation), and `Switch`'s `activeColor` → `activeThumbColor`.
 - `customer_app`: `schedule_step.dart`'s per-`RadioListTile` `groupValue`/`onChanged` (the old repeated-per-item Radio API) replaced with a single `RadioGroup<String>` ancestor wrapping the `for`-generated tiles — the real migration, not just a rename, since the new Radio API manages group state at one place above the items instead of on each one.
 
-Both `flutter analyze` runs now exit 0, "No issues found!". Not yet re-pushed to confirm the CI `mobile` job goes green — do that next, and a device/emulator pass is still outstanding for both apps.
+Both `flutter analyze` runs now exit 0, "No issues found!". Confirmed on push: CI's `mobile` job (both apps) went green.
+
+**Device pass on cleaner_app done (2026-08-25).** Set up a full local Android toolchain (JDK 21, Android cmdline-tools, an AVD) and actually ran `flutter run` for the first time in this project's history. `flutter analyze` and `pub get` never catch what only a real build/run does, and this surfaced problems `analyze` was structurally blind to:
+
+- **Neither app had any platform scaffolding at all** — no `android/`, `ios/`, or any other platform folder, only `lib/` and `pubspec.yaml`. The apps were pure Dart source that had literally never been built for any target. Ran `flutter create --org com.sparkle .` in both (preserves `lib/`/`pubspec.yaml`, only adds the missing platform dirs).
+- **Both pubspecs declare five font assets that don't exist on disk** (`Archivo-{SemiBold,ExtraBold}.ttf`, `Inter-{Regular,Medium,SemiBold}.ttf`) — `flutter analyze`/`pub get` never check that a declared asset file is actually present, only bundling does. Downloaded the real static-weight TTFs (Archivo and Inter are both SIL OFL, freely redistributable) into `assets/fonts/` in both apps.
+- **`_ExpiryRing`'s payout text could overflow its fixed 108×108 ring** for any payout amount wide enough at 34px/weight 800 — wrapped the ring's content in `FittedBox(fit: BoxFit.scaleDown)` so it scales to fit any amount instead of assuming a size.
+- **The `DEEP CLEAN` + `PETS` badge chips overflowed horizontally** when both were present on a narrower card — swapped the `Row` for a `Wrap` so they flow to a second line instead.
+- **The Job Discovery header's `SliverAppBar` didn't have room for its own content**: `expandedHeight: 132` minus the background's own padding left only 32px, but a two-line text block plus a default `Switch` (whose tap target is taller than its visual size) needs more. Gave the `Switch` `materialTapTargetSize: MaterialTapTargetSize.shrinkWrap`, wrapped the text column in `Expanded` with `overflow: TextOverflow.ellipsis` on the subtitle (the row was also overflowing horizontally — the column's unconstrained natural width plus the switch exceeded the available space), and bumped `expandedHeight` to 144 for margin.
+
+After these fixes, `cleaner_app` runs cleanly end-to-end on a real Android emulator with zero rendering errors — screenshot on file.
+
+Scaffolding itself introduced a regression, caught before pushing: `flutter create .` adds a template `test/widget_test.dart` referencing a `MyApp` class that doesn't exist in either app (real name is `SparkleCleanerApp`/`SparkleCustomerApp`) — a hard analyzer error — and, because neither app previously had an `analysis_options.yaml` at all, properly wires up `flutter_lints` for the first time, surfacing 7 more real `const`-correctness/style issues `analyze` had never actually been checking. Rewrote both template tests to a minimal smoke test against the real app class, and applied the `const`/set-literal/null-aware fixes `flutter_lints` asked for. Both apps analyze clean (0 issues) after.
+
+**Environment note, not a code bug:** the `google_apis` Android 34 system image intermittently denies the app SELinux read access to `/proc/sys/vm/max_map_count`, which crashes Dart isolate creation before anything renders (`Could not create root isolate`). Switching to an `aosp_atd` system image avoided it. If this recurs on `google_apis`, either use `aosp_atd`/`google_atd` instead, or (needs a user-approved Bash permission, not grantable mid-session) `adb shell setenforce 0` on the emulator.
+
+**Not yet done:** the same device pass for `customer_app` (it got the same platform scaffolding and font assets, but hasn't been run) and Firebase config (`google-services.json`/`GoogleService-Info.plist`) is still a placeholder, so the Firebase-backed features (chat, realtime tracking) will need that wired up before they'll actually connect.
 
 ## 9. Observability — **done**
 

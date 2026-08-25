@@ -155,9 +155,9 @@ class _ChatScreenState extends State<ChatScreen> {
             ),
             if (!_closed) ...[
               const SizedBox(height: Sparkle.s2),
-              Text('Private to this booking. Closes 24 hours after the job.',
+              const Text('Private to this booking. Closes 24 hours after the job.',
                   textAlign: TextAlign.center,
-                  style: const TextStyle(fontSize: 12, color: Sparkle.inkSoft)),
+                  style: TextStyle(fontSize: 12, color: Sparkle.inkSoft)),
             ],
           ]),
         ),
