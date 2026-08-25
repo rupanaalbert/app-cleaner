@@ -14,6 +14,8 @@
  * Money here is computed with the real pricing math, not hardcoded, so seeded
  * bookings satisfy the same CHECK constraints production data does.
  */
+import './helpers/env.js';
+
 import { randomUUID } from 'node:crypto';
 import argon2 from 'argon2';
 
