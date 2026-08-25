@@ -3,7 +3,11 @@ import { query } from '../db/pool.js';
 import { config } from '../config/index.js';
 import { AppError } from '../utils/errors.js';
 
-const client = config.twilio.sid ? twilio(config.twilio.sid, config.twilio.token) : null;
+// A placeholder value (e.g. ".env"'s unfilled "...") is still a truthy
+// string, so check the shape Twilio itself requires rather than just
+// presence — an invalid SID throws synchronously from the constructor,
+// which otherwise takes the whole server down at import time.
+const client = config.twilio.sid?.startsWith('AC') ? twilio(config.twilio.sid, config.twilio.token) : null;
 
 export class TrustService {
   /**

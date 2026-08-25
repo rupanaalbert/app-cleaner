@@ -15,7 +15,7 @@ import { logger } from '../utils/logger.js';
 let client;
 function twilioClient() {
   if (client !== undefined) return client;
-  client = (config.twilio.sid && config.twilio.token)
+  client = (config.twilio.sid?.startsWith('AC') && config.twilio.token)
     ? twilio(config.twilio.sid, config.twilio.token)
     : null;
   return client;
