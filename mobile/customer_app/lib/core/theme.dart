@@ -23,6 +23,24 @@ class Sparkle {
   static const s1 = 4.0, s2 = 8.0, s3 = 12.0, s4 = 16.0, s5 = 24.0, s6 = 32.0;
   static const radius = 16.0;
 
+  // Depth for surfaces that should read as tappable/liftable rather than flat
+  // — a card, not a form row. Same low-alpha marine tint as PriceLedger's
+  // existing shadow, just softer, so the whole app shares one shadow color.
+  static const cardShadow = [
+    BoxShadow(color: Color(0x0F0E3A45), blurRadius: 14, offset: Offset(0, 3)),
+  ];
+  static const selectedShadow = [
+    BoxShadow(color: Color(0x2612A088), blurRadius: 18, offset: Offset(0, 5)),
+  ];
+  static const heroShadow = [
+    BoxShadow(color: Color(0x1F0E3A45), blurRadius: 28, offset: Offset(0, 10)),
+  ];
+  static const heroGradient = LinearGradient(
+    begin: Alignment.topLeft,
+    end: Alignment.bottomRight,
+    colors: [seafoamSoft, surface],
+  );
+
   static ThemeData theme() => ThemeData(
         useMaterial3: true,
         scaffoldBackgroundColor: linen,

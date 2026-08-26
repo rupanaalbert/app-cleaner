@@ -91,6 +91,7 @@ class _PayoutsStepScreenState extends State<PayoutsStepScreen> {
                 color: Sparkle.surface,
                 borderRadius: BorderRadius.circular(Sparkle.radius),
                 border: Border.all(color: verified ? Sparkle.seafoam : Sparkle.hairline),
+                boxShadow: Sparkle.cardShadow,
               ),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,

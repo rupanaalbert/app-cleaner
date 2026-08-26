@@ -138,6 +138,7 @@ class _DocumentCard extends StatelessWidget {
         color: Sparkle.surface,
         borderRadius: BorderRadius.circular(Sparkle.radius),
         border: Border.all(color: borderColor),
+        boxShadow: Sparkle.cardShadow,
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,

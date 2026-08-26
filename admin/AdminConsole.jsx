@@ -155,8 +155,7 @@ function Console({ onSignOut }) {
   }, [disputes, say, refreshMetrics]);
 
   return (
-    <div className="flex h-screen w-full bg-[#FAFBFA] text-[#0B1F26]"
-         style={{ fontFamily: "ui-sans-serif, system-ui, -apple-system, sans-serif" }}>
+    <div className="flex h-screen w-full bg-[#FAFBFA] text-[#0B1F26]">
       <Rail
         tab={tab}
         onTab={switchTab}
@@ -230,18 +229,31 @@ function LoginScreen({ onSignedIn }) {
   };
 
   return (
-    <div className="flex h-screen w-full items-center justify-center bg-[#0E3A45] px-6"
-         style={{ fontFamily: "ui-sans-serif, system-ui, -apple-system, sans-serif" }}>
+    <div className="flex h-screen w-full bg-[#0E3A45]">
+      <div className="hidden w-1/2 flex-col justify-between p-10 text-white md:flex">
+        <div>
+          <div className="font-display text-lg font-extrabold tracking-tight">Sparkle</div>
+          <div className="text-sm text-[#A9C6CD]">Trust &amp; Safety</div>
+        </div>
+        <div className="flex flex-col items-start gap-6">
+          <img src="/images/sparkle_motif.svg" width={160} height={160} alt="" className="opacity-90" />
+          <p className="font-display max-w-xs text-2xl font-semibold leading-snug">
+            Trust &amp; Safety for every clean
+          </p>
+        </div>
+        <div className="text-xs text-[#A9C6CD]">Admin console · audit-backed actions only</div>
+      </div>
+      <div className="flex flex-1 items-center justify-center px-6">
       <form onSubmit={submit} className="w-full max-w-sm rounded-2xl bg-white p-7 shadow-xl">
         <div className="flex items-center gap-2 text-[#0E3A45]">
           <ShieldCheck size={20} />
           <div>
-            <div className="text-sm font-semibold tracking-tight">Sparkle</div>
+            <div className="font-display text-sm font-semibold tracking-tight">Sparkle</div>
             <div className="text-xs text-[#6B8087]">Trust &amp; Safety</div>
           </div>
         </div>
 
-        <h1 className="mt-6 text-lg font-semibold">Sign in</h1>
+        <h1 className="font-display mt-6 text-lg font-semibold">Sign in</h1>
         <p className="mt-1 text-sm text-[#6B8087]">Admin accounts only.</p>
 
         <label className="mt-5 block text-xs font-semibold uppercase tracking-wider text-[#6B8087]">Email</label>
@@ -272,6 +284,7 @@ function LoginScreen({ onSignedIn }) {
           {busy && <Loader2 size={15} className="animate-spin" />} Sign in
         </button>
       </form>
+      </div>
     </div>
   );
 }
@@ -300,7 +313,7 @@ function Rail({ tab, onTab, counts, user, onSignOut }) {
   return (
     <aside className="flex w-56 shrink-0 flex-col bg-[#0E3A45] p-3">
       <div className="px-3 py-4">
-        <div className="text-sm font-semibold tracking-tight text-white">Sparkle</div>
+        <div className="font-display text-sm font-semibold tracking-tight text-white">Sparkle</div>
         <div className="text-xs text-[#A9C6CD]">Trust &amp; Safety</div>
       </div>
       <nav className="mt-2 space-y-1">
@@ -871,8 +884,8 @@ function KeyHelp({ onClose }) {
 function EmptyQueue({ tab }) {
   return (
     <div className="flex h-full flex-col items-center justify-center px-8 text-center">
-      <ShieldCheck size={36} className="text-[#12A088]" />
-      <h2 className="mt-4 text-lg font-semibold">
+      <img src="/images/illustration_empty_calm.svg" width={96} height={96} alt="" className="mb-1" />
+      <h2 className="font-display mt-4 text-lg font-semibold">
         {tab === "vetting" ? "No applications waiting" : "No open disputes"}
       </h2>
       <p className="mt-1 max-w-sm text-sm text-[#6B8087]">

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_svg/flutter_svg.dart';
 
 import '../../core/theme.dart';
 import '../../data/onboarding_repository.dart';
@@ -178,39 +179,51 @@ class _Header extends StatelessWidget {
       color: Sparkle.marine,
       padding: EdgeInsets.fromLTRB(
           Sparkle.s4, MediaQuery.of(context).padding.top + Sparkle.s5, Sparkle.s4, Sparkle.s5),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
+      child: Stack(
         children: [
-          const Text('Getting you approved',
-              style: TextStyle(
-                  fontFamily: 'Archivo', fontSize: 24, fontWeight: FontWeight.w800,
-                  color: Colors.white, letterSpacing: -0.5)),
-          const SizedBox(height: Sparkle.s2),
-          Text(
-            state.approved
-                ? 'You\'re approved. Turn on Accepting jobs to start receiving offers.'
-                : 'Four tasks, and you can do them in any order. Start the background check first — it takes the longest.',
-            style: const TextStyle(color: Color(0xFFA9C6CD), fontSize: 14, height: 1.45),
+          Positioned(
+            right: -20,
+            top: MediaQuery.of(context).padding.top,
+            child: Opacity(
+              opacity: 0.12,
+              child: SvgPicture.asset('assets/images/sparkle_motif.svg', width: 120, height: 120),
+            ),
           ),
-          const SizedBox(height: Sparkle.s4),
-          Row(
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Expanded(
-                child: ClipRRect(
-                  borderRadius: BorderRadius.circular(4),
-                  child: LinearProgressIndicator(
-                    value: done / total,
-                    minHeight: 6,
-                    backgroundColor: Colors.white24,
-                    valueColor: const AlwaysStoppedAnimation(Sparkle.seafoam),
-                  ),
-                ),
+              const Text('Getting you approved',
+                  style: TextStyle(
+                      fontFamily: 'Archivo', fontSize: 24, fontWeight: FontWeight.w800,
+                      color: Colors.white, letterSpacing: -0.5)),
+              const SizedBox(height: Sparkle.s2),
+              Text(
+                state.approved
+                    ? 'You\'re approved. Turn on Accepting jobs to start receiving offers.'
+                    : 'Four tasks, and you can do them in any order. Start the background check first — it takes the longest.',
+                style: const TextStyle(color: Color(0xFFA9C6CD), fontSize: 14, height: 1.45),
               ),
-              const SizedBox(width: Sparkle.s3),
-              Text('$done of $total',
-                  style: const TextStyle(
-                      color: Colors.white, fontSize: 13, fontWeight: FontWeight.w600,
-                      fontFeatures: [FontFeature.tabularFigures()])),
+              const SizedBox(height: Sparkle.s4),
+              Row(
+                children: [
+                  Expanded(
+                    child: ClipRRect(
+                      borderRadius: BorderRadius.circular(4),
+                      child: LinearProgressIndicator(
+                        value: done / total,
+                        minHeight: 6,
+                        backgroundColor: Colors.white24,
+                        valueColor: const AlwaysStoppedAnimation(Sparkle.seafoam),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: Sparkle.s3),
+                  Text('$done of $total',
+                      style: const TextStyle(
+                          color: Colors.white, fontSize: 13, fontWeight: FontWeight.w600,
+                          fontFeatures: [FontFeature.tabularFigures()])),
+                ],
+              ),
             ],
           ),
         ],
@@ -242,6 +255,7 @@ class _TaskTile extends StatelessWidget {
             color: Sparkle.surface,
             borderRadius: BorderRadius.circular(Sparkle.radius),
             border: Border.all(color: step.complete ? Sparkle.seafoam : Sparkle.hairline),
+            boxShadow: Sparkle.cardShadow,
           ),
           child: Row(
             children: [
@@ -300,9 +314,10 @@ class _SubmittedNotice extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.all(Sparkle.s4),
       decoration: BoxDecoration(
-        color: approved ? const Color(0xFFE2F2EE) : Sparkle.surface,
+        color: approved ? Sparkle.seafoamSoft : Sparkle.surface,
         borderRadius: BorderRadius.circular(Sparkle.radius),
         border: Border.all(color: approved ? Sparkle.seafoam : Sparkle.hairline),
+        boxShadow: Sparkle.cardShadow,
       ),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,

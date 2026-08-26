@@ -1,9 +1,11 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_svg/flutter_svg.dart';
 
 import '../../../core/theme.dart';
 import '../../../data/booking_repository.dart';
 import '../booking_controller.dart';
 import '../booking_flow_screen.dart' show dollars;
+import '../widgets/hero_banner.dart';
 
 class ServiceStep extends StatelessWidget {
   const ServiceStep({super.key, required this.c});
@@ -14,6 +16,7 @@ class ServiceStep extends StatelessWidget {
     return ListView(
       padding: const EdgeInsets.fromLTRB(Sparkle.s4, Sparkle.s4, Sparkle.s4, Sparkle.s6),
       children: [
+        const HeroBanner(imageAsset: 'assets/images/hero_tidy_home.svg'),
         Text('What kind of clean?', style: Theme.of(context).textTheme.titleLarge),
         const SizedBox(height: Sparkle.s4),
         for (final service in ServiceOption.catalog)
@@ -25,6 +28,9 @@ class ServiceStep extends StatelessWidget {
               title: service.name,
               eyebrow: service.pitch,
               body: service.detail,
+              imageAsset: service.code == 'standard'
+                  ? 'assets/images/icon_standard_clean.svg'
+                  : 'assets/images/icon_deep_clean.svg',
             ),
           ),
         const SizedBox(height: Sparkle.s4),
@@ -57,6 +63,7 @@ class _SelectCard extends StatelessWidget {
     required this.title,
     required this.eyebrow,
     required this.body,
+    this.imageAsset,
   });
 
   final bool selected;
@@ -64,6 +71,7 @@ class _SelectCard extends StatelessWidget {
   final String title;
   final String eyebrow;
   final String body;
+  final String? imageAsset;
 
   @override
   Widget build(BuildContext context) {
@@ -74,7 +82,8 @@ class _SelectCard extends StatelessWidget {
         onTap: onTap,
         borderRadius: BorderRadius.circular(Sparkle.radius),
         child: AnimatedContainer(
-          duration: const Duration(milliseconds: 160),
+          duration: const Duration(milliseconds: 200),
+          curve: Curves.easeOutCubic,
           padding: const EdgeInsets.all(Sparkle.s4),
           decoration: BoxDecoration(
             color: selected ? Sparkle.seafoamSoft : Sparkle.surface,
@@ -83,12 +92,17 @@ class _SelectCard extends StatelessWidget {
               color: selected ? Sparkle.seafoam : Sparkle.hairline,
               width: selected ? 2 : 1,
             ),
+            boxShadow: selected ? Sparkle.selectedShadow : Sparkle.cardShadow,
           ),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Row(
                 children: [
+                  if (imageAsset != null) ...[
+                    SvgPicture.asset(imageAsset!, width: 48, height: 48),
+                    const SizedBox(width: Sparkle.s3),
+                  ],
                   Expanded(
                     child: Text(eyebrow.toUpperCase(),
                         style: Theme.of(context).textTheme.labelSmall),

@@ -3,6 +3,7 @@ import 'package:flutter/services.dart';
 
 import '../../../core/theme.dart';
 import '../booking_controller.dart';
+import '../widgets/hero_banner.dart';
 
 class HomeStep extends StatelessWidget {
   const HomeStep({super.key, required this.c});
@@ -13,27 +14,34 @@ class HomeStep extends StatelessWidget {
     return ListView(
       padding: const EdgeInsets.fromLTRB(Sparkle.s4, Sparkle.s4, Sparkle.s4, Sparkle.s6),
       children: [
+        const HeroBanner(imageAsset: 'assets/images/hero_tidy_home.svg'),
         Text('Tell us about your home', style: Theme.of(context).textTheme.titleLarge),
         const SizedBox(height: Sparkle.s1),
         const Text('Room count sets the price and the time we book for your cleaner.',
             style: TextStyle(color: Sparkle.inkSoft, fontSize: 13)),
         const SizedBox(height: Sparkle.s5),
-        _Stepper(
-          label: 'Bedrooms',
-          value: c.draft.bedrooms,
-          min: 1,
-          max: 8,
-          onChanged: (v) => c.setRooms(bedrooms: v),
+        _SectionCard(
+          child: Column(
+            children: [
+              _Stepper(
+                label: 'Bedrooms',
+                value: c.draft.bedrooms,
+                min: 1,
+                max: 8,
+                onChanged: (v) => c.setRooms(bedrooms: v),
+              ),
+              const Divider(height: Sparkle.s6, color: Sparkle.hairline),
+              _Stepper(
+                label: 'Bathrooms',
+                value: c.draft.bathrooms,
+                min: 1,
+                max: 6,
+                onChanged: (v) => c.setRooms(bathrooms: v),
+              ),
+            ],
+          ),
         ),
-        const Divider(height: Sparkle.s6, color: Sparkle.hairline),
-        _Stepper(
-          label: 'Bathrooms',
-          value: c.draft.bathrooms,
-          min: 1,
-          max: 6,
-          onChanged: (v) => c.setRooms(bathrooms: v),
-        ),
-        const SizedBox(height: Sparkle.s6),
+        const SizedBox(height: Sparkle.s5),
         Text('Square footage', style: Theme.of(context).textTheme.titleMedium),
         const SizedBox(height: Sparkle.s1),
         const Text('Optional. A rough number is fine — it only adjusts larger homes.',
@@ -59,6 +67,27 @@ class HomeStep extends StatelessWidget {
           ),
         ),
       ],
+    );
+  }
+}
+
+/// Groups related rows into one lifted surface instead of bare page-background
+/// rows — matches _SelectCard/_Card's depth language on the other steps.
+class _SectionCard extends StatelessWidget {
+  const _SectionCard({required this.child});
+  final Widget child;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.all(Sparkle.s4),
+      decoration: BoxDecoration(
+        color: Sparkle.surface,
+        borderRadius: BorderRadius.circular(Sparkle.radius),
+        border: Border.all(color: Sparkle.hairline),
+        boxShadow: Sparkle.cardShadow,
+      ),
+      child: child,
     );
   }
 }

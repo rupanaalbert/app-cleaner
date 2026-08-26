@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
+import 'package:flutter_svg/flutter_svg.dart';
 import 'package:intl/intl.dart';
 
 import '../../../core/theme.dart';
@@ -110,7 +111,7 @@ class _ReviewStepState extends State<ReviewStep> {
         ),
         const SizedBox(height: Sparkle.s2),
         _Reassurance(
-          icon: Icons.credit_card_outlined,
+          leading: SvgPicture.asset('assets/images/icon_card_hold.svg', width: 18, height: 18),
           title: 'Held now, charged after',
           body: quote == null
               ? 'We place a hold on your card and only charge once the clean is finished.'
@@ -118,7 +119,7 @@ class _ReviewStepState extends State<ReviewStep> {
                   'Cancel more than 12 hours ahead and the hold is released in full.',
         ),
         const _Reassurance(
-          icon: Icons.verified_user_outlined,
+          leading: _ShieldCheckIcon(),
           title: 'Every cleaner is background checked',
           body: 'Identity and criminal record checks are re-run yearly. Your address is only shared once a cleaner accepts.',
         ),
@@ -184,6 +185,7 @@ class _Card extends StatelessWidget {
         color: Sparkle.surface,
         borderRadius: BorderRadius.circular(Sparkle.radius),
         border: Border.all(color: Sparkle.hairline),
+        boxShadow: Sparkle.cardShadow,
       ),
       child: Column(children: children),
     );
@@ -227,8 +229,8 @@ class _Row extends StatelessWidget {
 }
 
 class _Reassurance extends StatelessWidget {
-  const _Reassurance({required this.icon, required this.title, required this.body});
-  final IconData icon;
+  const _Reassurance({required this.leading, required this.title, required this.body});
+  final Widget leading;
   final String title;
   final String body;
 
@@ -239,7 +241,7 @@ class _Reassurance extends StatelessWidget {
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Icon(icon, size: 18, color: Sparkle.marine),
+          leading,
           const SizedBox(width: Sparkle.s3),
           Expanded(
             child: Column(
@@ -254,5 +256,14 @@ class _Reassurance extends StatelessWidget {
         ],
       ),
     );
+  }
+}
+
+class _ShieldCheckIcon extends StatelessWidget {
+  const _ShieldCheckIcon();
+
+  @override
+  Widget build(BuildContext context) {
+    return SvgPicture.asset('assets/images/icon_shield_check.svg', width: 18, height: 18);
   }
 }

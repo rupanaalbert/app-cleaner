@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_svg/flutter_svg.dart';
 import 'package:intl/intl.dart';
 
 import '../../core/theme.dart';
@@ -334,7 +335,13 @@ class _ConfirmedSheet extends StatelessWidget {
         mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Icon(Icons.check_circle, color: Sparkle.seafoam, size: 40),
+          TweenAnimationBuilder<double>(
+            tween: Tween(begin: 0, end: 1),
+            duration: const Duration(milliseconds: 420),
+            curve: Curves.elasticOut,
+            builder: (context, value, child) => Transform.scale(scale: value, child: child),
+            child: SvgPicture.asset('assets/images/sparkle_motif.svg', width: 64, height: 64),
+          ),
           const SizedBox(height: Sparkle.s3),
           Text('Booked for $when', style: Theme.of(context).textTheme.titleLarge),
           const SizedBox(height: Sparkle.s2),

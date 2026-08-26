@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_svg/flutter_svg.dart';
 import 'package:intl/intl.dart';
 
 import '../../core/theme.dart';
@@ -139,8 +140,10 @@ class _JobTile extends StatelessWidget {
           borderRadius: BorderRadius.circular(Sparkle.radius),
           child: Container(
             decoration: BoxDecoration(
+              color: Sparkle.surface,
               borderRadius: BorderRadius.circular(Sparkle.radius),
               border: Border.all(color: job.isActive ? Sparkle.seafoam : Sparkle.hairline, width: job.isActive ? 1.5 : 1),
+              boxShadow: Sparkle.cardShadow,
             ),
             padding: const EdgeInsets.all(Sparkle.s4),
             child: Row(
@@ -240,7 +243,7 @@ class _EmptyState extends StatelessWidget {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            const Icon(Icons.event_available_outlined, size: 44, color: Sparkle.inkSoft),
+            SvgPicture.asset('assets/images/illustration_empty_calm.svg', width: 96, height: 96),
             const SizedBox(height: Sparkle.s4),
             Text('Nothing on your schedule', style: Theme.of(context).textTheme.titleLarge),
             const SizedBox(height: Sparkle.s2),

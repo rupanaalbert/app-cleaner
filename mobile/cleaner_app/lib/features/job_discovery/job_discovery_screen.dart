@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
+import 'package:flutter_svg/flutter_svg.dart';
 import 'package:intl/intl.dart';
 
 import '../../core/theme.dart';
@@ -508,8 +509,7 @@ class _EmptyState extends StatelessWidget {
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          Icon(online ? Icons.notifications_active_outlined : Icons.toggle_off_outlined,
-              size: 44, color: Sparkle.inkSoft),
+          SvgPicture.asset('assets/images/illustration_empty_calm.svg', width: 96, height: 96),
           const SizedBox(height: Sparkle.s4),
           Text(online ? 'No open jobs right now' : 'You\'re not accepting jobs',
               style: Theme.of(context).textTheme.titleLarge, textAlign: TextAlign.center),

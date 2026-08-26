@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_svg/flutter_svg.dart';
 import 'package:intl/intl.dart';
 
 import '../../core/theme.dart';
@@ -153,25 +154,40 @@ class _EarningsScreenState extends State<EarningsScreen> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        Container(
-          decoration: BoxDecoration(
-            color: Sparkle.marine,
-            borderRadius: BorderRadius.circular(Sparkle.radius),
-          ),
-          padding: const EdgeInsets.all(Sparkle.s5),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
+        ClipRRect(
+          borderRadius: BorderRadius.circular(Sparkle.radius),
+          child: Stack(
             children: [
-              Text('TAKE-HOME',
-                  style: Theme.of(context).textTheme.labelSmall?.copyWith(color: const Color(0xFFA9C6CD))),
-              const SizedBox(height: Sparkle.s1),
-              Text(
-                _money.format(e.takeHomeCents / 100),
-                style: Theme.of(context).textTheme.displaySmall?.copyWith(color: Sparkle.payout, fontSize: 40),
+              Container(
+                decoration: BoxDecoration(
+                  color: Sparkle.marine,
+                  borderRadius: BorderRadius.circular(Sparkle.radius),
+                ),
+                padding: const EdgeInsets.all(Sparkle.s5),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text('TAKE-HOME',
+                        style: Theme.of(context).textTheme.labelSmall?.copyWith(color: const Color(0xFFA9C6CD))),
+                    const SizedBox(height: Sparkle.s1),
+                    Text(
+                      _money.format(e.takeHomeCents / 100),
+                      style: Theme.of(context).textTheme.displaySmall?.copyWith(color: Sparkle.payout, fontSize: 40),
+                    ),
+                    const SizedBox(height: Sparkle.s1),
+                    Text('${e.jobs} ${e.jobs == 1 ? 'job' : 'jobs'} · your share plus tips',
+                        style: const TextStyle(color: Color(0xFFA9C6CD), fontSize: 13)),
+                  ],
+                ),
               ),
-              const SizedBox(height: Sparkle.s1),
-              Text('${e.jobs} ${e.jobs == 1 ? 'job' : 'jobs'} · your share plus tips',
-                  style: const TextStyle(color: Color(0xFFA9C6CD), fontSize: 13)),
+              Positioned(
+                right: -12,
+                bottom: -12,
+                child: Opacity(
+                  opacity: 0.18,
+                  child: SvgPicture.asset('assets/images/hero_payout.svg', width: 120, height: 84),
+                ),
+              ),
             ],
           ),
         ),
@@ -274,6 +290,7 @@ class _Card extends StatelessWidget {
           color: Sparkle.surface,
           borderRadius: BorderRadius.circular(Sparkle.radius),
           border: Border.all(color: Sparkle.hairline),
+          boxShadow: Sparkle.cardShadow,
         ),
         padding: const EdgeInsets.symmetric(horizontal: Sparkle.s4, vertical: Sparkle.s1),
         child: child,

@@ -297,7 +297,18 @@ class _ActiveJobScreenState extends State<ActiveJobScreen> {
             Center(
               child: Column(
                 children: [
-                  const Icon(Icons.check_circle, color: Sparkle.seafoam, size: 40),
+                  TweenAnimationBuilder<double>(
+                    tween: Tween(begin: 0, end: 1),
+                    duration: const Duration(milliseconds: 420),
+                    curve: Curves.elasticOut,
+                    builder: (context, value, child) => Transform.scale(scale: value, child: child),
+                    child: Container(
+                      width: 64,
+                      height: 64,
+                      decoration: const BoxDecoration(color: Sparkle.seafoamSoft, shape: BoxShape.circle),
+                      child: const Icon(Icons.check_circle, color: Sparkle.seafoam, size: 36),
+                    ),
+                  ),
                   const SizedBox(height: Sparkle.s2),
                   Text('Job complete', style: Theme.of(context).textTheme.titleLarge),
                 ],
@@ -444,6 +455,7 @@ class _Card extends StatelessWidget {
           color: Sparkle.surface,
           borderRadius: BorderRadius.circular(Sparkle.radius),
           border: Border.all(color: Sparkle.hairline),
+          boxShadow: Sparkle.cardShadow,
         ),
         padding: const EdgeInsets.all(Sparkle.s4),
         child: child,

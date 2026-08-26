@@ -20,10 +20,26 @@ class Sparkle {
   static const ink = Color(0xFF33484F);
   static const inkSoft = Color(0xFF6B8087);
   static const hairline = Color(0xFFD7E3E0);
+  static const seafoamSoft = Color(0xFFE2F2EE); // selected/success states
 
   // Spacing scale — 4pt base, no arbitrary values in widgets.
   static const s1 = 4.0, s2 = 8.0, s3 = 12.0, s4 = 16.0, s5 = 24.0, s6 = 32.0;
   static const radius = 18.0;
+
+  // Depth for surfaces that should read as tappable/liftable rather than flat
+  // — a card, not a form row. Same low-alpha marine tint used across all
+  // three surfaces (job_discovery's expiry card, the customer app, admin).
+  static const cardShadow = [
+    BoxShadow(color: Color(0x0F0E3A45), blurRadius: 14, offset: Offset(0, 3)),
+  ];
+  static const heroShadow = [
+    BoxShadow(color: Color(0x1F0E3A45), blurRadius: 28, offset: Offset(0, 10)),
+  ];
+  static const heroGradient = LinearGradient(
+    begin: Alignment.topLeft,
+    end: Alignment.bottomRight,
+    colors: [Color(0xFFFEF6E8), surface],
+  );
 
   static ThemeData theme() {
     const display = 'Archivo';
