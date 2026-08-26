@@ -273,9 +273,10 @@ async function seedBooking({ rules, service, customer, cleaner, status, daysAgo 
       `INSERT INTO bookings (reference, customer_id, cleaner_id, property_id, quote_id,
                              service_code, status, scheduled_at, duration_min,
                              subtotal_cents, ts_fee_cents, tax_cents, total_cents,
-                             commission_cents, payout_cents,
+                             commission_cents, payout_cents, created_at,
                              matched_at, en_route_at, arrived_at, started_at, completed_at)
        VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9::integer,$10,$11,$12,$13,$14,$15,
+               $8::timestamptz - interval '3 days',
                CASE WHEN $3::uuid IS NULL THEN NULL ELSE $8::timestamptz - interval '2 days' END,
                CASE WHEN $16 THEN $8::timestamptz - interval '30 minutes' END,
                CASE WHEN $16 THEN $8::timestamptz - interval '5 minutes' END,
