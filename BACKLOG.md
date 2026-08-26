@@ -112,6 +112,12 @@ Scaffolding itself introduced a regression, caught before pushing: `flutter crea
 
 This is dev-only wiring, not something to ship: it hardcodes a seeded password and a loopback URL. Whoever builds the real login screen and property picker should replace `_devTokenProvider`/the hardcoded `propertyId` with the real session and selection.
 
+**cleaner_app pointed at the real backend too (2026-08-26).** Same pattern as customer_app: `HttpOffersRepository`, `HttpJobsRepository`, `HttpEarningsRepository`, and `HttpOnboardingRepository` already existed, unused. Added the same dev-only `_devTokenProvider` (logs in as the seeded approved cleaner, `amara.osei@example.com`, on every token request) and wired all four in. Chat and location stayed on their fakes — chat needs Firebase config that doesn't exist, and there's no real GPS worth publishing from an emulator.
+
+This flipped the four fake repository classes from "used by `main.dart`" to "referenced nowhere but their own declaration," which is a real `unused_element` warning for a private class (unlike `customer_app`'s already-public `FakeBookingRepository`) — `flutter analyze` would have failed again. Made them public (dropped the leading underscore) instead of deleting them, so they stay available for tests/an offline demo, matching customer_app's convention.
+
+Verified live against the running backend: Discover correctly shows "No open jobs right now" from a real `GET /v1/cleaner/offers` (confirmed 200 in the backend's own request log, not just the empty-state UI), Schedule shows a real seeded active job ($60.80 Standard Clean, on the way), and Earnings shows real (zero, for this week) totals from `GET /cleaner/earnings`. No overflow errors, no crashes.
+
 **Still not done:** neither app has Firebase config (`google-services.json`/`GoogleService-Info.plist` — still a placeholder), so the Firebase-backed features (chat, realtime tracking) will need that wired up before they'll actually connect. Screens beyond what was walked through (checkout/payment, chat, active-job, earnings) haven't had their own device pass yet either.
 
 ## 9. Observability — **done**

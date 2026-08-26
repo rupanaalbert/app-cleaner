@@ -1,6 +1,8 @@
 import 'dart:async';
+import 'dart:convert';
 
 import 'package:flutter/material.dart';
+import 'package:http/http.dart' as http;
 import 'package:image_picker/image_picker.dart';
 
 import 'core/theme.dart';
@@ -20,26 +22,42 @@ import 'features/schedule/schedule_screen.dart';
 
 void main() => runApp(const SparkleCleanerApp());
 
+// 10.0.2.2 is the Android emulator's alias for the host machine's localhost —
+// `npm run dev` in backend/ needs to already be running there.
+const _devApiBaseUrl = 'http://10.0.2.2:8080';
+
+// There's no login screen wired up yet, so this logs in with a seeded dev
+// cleaner on every token request rather than caching — simplest thing that
+// can't hand the app a stale/expired access token. Swap for a real session
+// once auth exists. Chat and location stay on their fakes: chat needs
+// Firebase config that doesn't exist yet, and there's no real device/GPS
+// position worth publishing from an emulator.
+Future<String> _devTokenProvider() async {
+  final res = await http.post(
+    Uri.parse('$_devApiBaseUrl/v1/auth/login'),
+    headers: {'content-type': 'application/json'},
+    body: jsonEncode({'email': 'amara.osei@example.com', 'password': 'sparkle-dev-password'}),
+  );
+  if (res.statusCode != 200) throw StateError('dev login failed: ${res.statusCode} ${res.body}');
+  return (jsonDecode(res.body) as Map<String, dynamic>)['access_token'] as String;
+}
+
 class SparkleCleanerApp extends StatelessWidget {
   const SparkleCleanerApp({super.key});
 
   @override
   Widget build(BuildContext context) {
-    // Swap these fakes for the Http* repositories once auth is wired:
-    //   HttpOffersRepository(baseUrl: ..., tokenProvider: ...), etc., and a
-    //   GeolocatorLocator() plus a real LocationPublisher for en-route tracking.
-    // The fakes keep every screen runnable and testable without a backend.
     return MaterialApp(
       title: 'Sparkle',
       theme: Sparkle.theme(),
       debugShowCheckedModeBanner: false,
       home: HomeShell(
-        offers: _FakeOffersRepository(),
-        jobs: _FakeJobsRepository(),
-        earnings: _FakeEarningsRepository(),
+        offers: HttpOffersRepository(baseUrl: _devApiBaseUrl, tokenProvider: _devTokenProvider),
+        jobs: HttpJobsRepository(baseUrl: _devApiBaseUrl, tokenProvider: _devTokenProvider),
+        earnings: HttpEarningsRepository(baseUrl: _devApiBaseUrl, tokenProvider: _devTokenProvider),
         locator: const FakeLocator(),
         chat: _FakeChatRepository(),
-        onboarding: _FakeOnboardingRepository(),
+        onboarding: HttpOnboardingRepository(baseUrl: _devApiBaseUrl, tokenProvider: _devTokenProvider),
       ),
     );
   }
@@ -159,7 +177,7 @@ class _HomeShellState extends State<HomeShell> {
 
 // ---------------------------------------------------------------- fakes -----
 
-class _FakeOffersRepository implements OffersRepository {
+class FakeOffersRepository implements OffersRepository {
   @override
   Future<List<JobOffer>> fetchOpenOffers() async {
     await Future<void>.delayed(const Duration(milliseconds: 400));
@@ -223,8 +241,8 @@ class _FakeJobData {
   final String? instructions;
 }
 
-class _FakeJobsRepository implements JobsRepository {
-  _FakeJobsRepository();
+class FakeJobsRepository implements JobsRepository {
+  FakeJobsRepository();
 
   final _now = DateTime.now();
   late final Map<String, _FakeJobData> _data = {
@@ -331,7 +349,7 @@ class _FakeChatRepository implements ChatRepository {
 /// `payouts_enabled` on an async webhook (see webhook.service.js); this fake
 /// just flips it on the call so the demo flow doesn't stall waiting for
 /// something that will never arrive.
-class _FakeOnboardingRepository implements OnboardingRepository {
+class FakeOnboardingRepository implements OnboardingRepository {
   bool _profileDone = false;
   bool _availabilityDone = false;
   final Set<String> _verifiedDocs = {};
@@ -444,7 +462,7 @@ class _FakeOnboardingRepository implements OnboardingRepository {
   }
 }
 
-class _FakeEarningsRepository implements EarningsRepository {
+class FakeEarningsRepository implements EarningsRepository {
   @override
   Future<Earnings> fetch({DateTime? from, DateTime? to}) async {
     await Future<void>.delayed(const Duration(milliseconds: 300));
