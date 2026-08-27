@@ -56,6 +56,8 @@ Shared marine (`#0E3A45`) across all three surfaces, different accents by job:
 
 Don't introduce a fourth palette. If a colour needs to mean something new, say what it means here first.
 
+All three surfaces also now share one depth and type system: a low-alpha marine `cardShadow` (`Sparkle.cardShadow` in each Flutter app's `theme.dart`; hand-written in `admin/index.css`) on every lifted card, the same self-hosted Archivo/Inter fonts, and the same sparkle-motif/hero SVGs. Added 2026-08-27 — see BACKLOG.md.
+
 ## Known stubs and rough edges
 
 - Transactional email/SMS deliver through Postmark and Twilio (`src/services/mail.service.js`, `sms.service.js`); with no provider configured they log instead, so dev and tests never hit the network. Sends are best-effort and post-commit — a provider blip loses a resendable message, not the write. No retry queue yet (`notifyQueue` is the place for one).
@@ -65,6 +67,8 @@ Don't introduce a fourth palette. If a colour needs to mean something new, say w
   - **Confirmed correct as written:** `authorize()`'s and `captureAndTransfer()`'s response parsing, `void`'s empty 204 body handling in `paypal.client.js`, and the `PAYMENT.PAYOUTS-ITEM.SUCCEEDED` handler's `resource.payout_item.sender_item_id` path (both the `verify:{cleanerId}` and `payout:{payoutId}` prefixes share that same shape).
   - **Still unconfirmed:** `CUSTOMER.DISPUTE.CREATED`'s resource shape — filing an actual dispute wasn't reachable through the sandbox Resolution Center in the time spent on the spike, so that branch still only follows PayPal's documented payload. Live webhook signature verification (`/v1/notifications/verify-webhook-signature`) also wasn't exercised end to end — there's no publicly reachable receiver in this environment, so delivery to the sandbox webhook always showed "Pending"; the events themselves were instead pulled via `GET /v1/notifications/webhooks-events`. Payouts also carried a real $0.25 fee on a $0.01 verification send in sandbox — worth knowing before assuming the verification payout is negligible-cost at any volume.
 - **Matching query index rewrite verified against real Postgres (2026-08-24).** `npm run loadtest:matching` confirms `Index Scan using cleaner_home_gix`, 45ms vs. a 250ms budget. See BACKLOG.md item 10 — getting a database connected also surfaced and fixed six previously-latent bugs (a missing `citext` extension, a non-IMMUTABLE generated column, `node-pg-migrate` double-running `0001_init` because it auto-discovers `.sql` siblings, an undeclared `pino-pretty` dependency that broke every non-prod run, and two bugs in `scripts/seed.js`). None of these had ever actually executed before this.
+- Both mobile apps now point at the real backend by default (`main.dart`'s `_devTokenProvider`, a dev-only seeded login — no login screen exists yet), not their fake repositories. `cleaner_app` logs in as `amara.osei@example.com`, `customer_app` as `priya.raman@example.com`. The fakes are left in place, public, for tests/an offline demo.
+- **Shared depth/font/illustration pass across all three surfaces (2026-08-27).** `cardShadow`/`seafoamSoft` tokens, brand fonts on the admin console, and hero/icon SVG art on both mobile apps — full detail in BACKLOG.md. Verified live on an Android emulator for `cleaner_app`; `customer_app`'s half (new `hero_banner.dart`, icon art) was authored in a parallel session and only reviewed by inspection, not on-device. `cleaner_app`'s new completion-checkmark animation also wasn't device-verified — the real 150m geofence blocked advancing the seeded job that far — so treat both as a coverage gap, not confirmed-working.
 
 ## Testing
 
@@ -74,6 +78,11 @@ When you add logic to pricing or ranking, add the test in the same commit. These
 
 ## Where to start
 
-See `BACKLOG.md`. **All ten items are done and item 10's fix is now verified live** (2026-08-24) — `npm run loadtest:matching` shows `cleaner_home_gix` used, not a seq scan. Remaining gaps worth picking up next: the admin console's reject/suspend/resolve flows were never exercised end-to-end (item 4), the Flutter screens from items 6-8 have never been through `flutter analyze` or a device (no toolchain was available when they were written), and `CUSTOMER.DISPUTE.CREATED`'s webhook shape is still unconfirmed against a real PayPal sandbox dispute.
+See `BACKLOG.md` — all ten backlog items are done, both Flutter apps analyze clean and have been through a real device pass, both point at the real backend by default, and the admin console's negative-median-match bug is fixed. Remaining gaps worth picking up next:
 
-If this machine has a native PostgreSQL already listening on 5432 (check `netstat -ano | findstr 5432` — `docker compose`'s port mapping will silently point at it instead of the container, surfacing as `password authentication failed for user "sparkle"`), remap the container to another host port rather than assuming the docker-compose config is wrong.
+- The admin console's reject/suspend/resolve flows still haven't been exercised end-to-end (item 4) — they share the same optimistic-update pattern already proven by approve, so this is coverage, not a known break.
+- `CUSTOMER.DISPUTE.CREATED`'s webhook shape is still unconfirmed against a real PayPal sandbox dispute.
+- Neither app has real Firebase config, so chat and realtime tracking still can't actually connect.
+- The 2026-08-27 depth/font/illustration pass's `customer_app` half (new `hero_banner.dart`, icon art) and `cleaner_app`'s new completion-checkmark animation haven't had their own device pass yet — see the note under Known stubs above.
+
+If this machine has a native PostgreSQL already listening on 5432 (check `netstat -ano | findstr 5432` — `docker compose`'s port mapping will silently point at it instead of the container, surfacing as `password authentication failed for user "sparkle"`), remap the container to another host port rather than assuming the docker-compose config is wrong. This machine specifically already has `infra-db-1`/`infra-redis-1` containers holding seeded data on 5433/6379 from prior sessions — `docker start` them rather than creating new ones, which will collide on the same ports.
