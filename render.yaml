@@ -1,0 +1,173 @@
+# Render Blueprint for Sparkle's backend (API + worker + Postgres/PostGIS + Redis).
+#
+# This deploys the API and worker as two separate services against one shared
+# Postgres and one shared Redis instance, matching infra/docker-compose.yml's
+# local-dev split. The admin console (a static Vite app) isn't included here —
+# it's a separate, smaller decision (Render static site, Netlify, Vercel all
+# work) and doesn't need to block this.
+#
+# Before deploying:
+#   1. Bump `plan:` on sparkle-db, sparkle-redis, sparkle-api, and
+#      sparkle-worker below — everything defaults to the smallest tier, which
+#      is fine to try the blueprint but not sized for real traffic.
+#   2. Every envVar below marked `sync: false` needs its real value pasted in
+#      via the Render dashboard after the first deploy (Render intentionally
+#      won't let a committed file hold live secrets).
+#   3. FIREBASE_SERVICE_ACCOUNT_JSON points at a Secret File, not a plain env
+#      var — the JSON key itself has to be uploaded via each service's
+#      Environment tab -> Secret Files (mount path /etc/secrets/firebase.json),
+#      since backend/secrets/firebase.json is gitignored and never leaves this
+#      machine otherwise. Do this on BOTH sparkle-api and sparkle-worker.
+#   4. Known blocker, unrelated to this file: onboarding.service.js's
+#      presignDocument() dynamically imports @aws-sdk/s3-request-presigner and
+#      @aws-sdk/client-s3, but neither is in backend/package.json or installed
+#      — that code path has never actually run and will crash on first call.
+#      Add both packages (`npm install @aws-sdk/client-s3
+#      @aws-sdk/s3-request-presigner` in backend/) before cleaner document
+#      upload can work in production.
+#   5. PAYPAL_ENV is set to "live" below. Point it at "sandbox" first and
+#      confirm a full booking/payment/payout cycle before flipping it.
+
+databases:
+  - name: sparkle-db
+    plan: basic-1gb # smallest paid tier; the free tier can't run migrations reliably under load
+    region: oregon
+    postgresMajorVersion: "16"
+    databaseName: sparkle
+    user: sparkle
+    # Migrations create these extensions (0001_init.sql) — all confirmed
+    # supported on Render Postgres 13+: postgis, pgcrypto, pg_trgm, citext,
+    # btree_gist. No plan-tier restriction on any of them.
+
+services:
+  - type: keyvalue
+    name: sparkle-redis
+    plan: starter
+    region: oregon
+    ipAllowList: [] # only Render services in this account can reach it
+
+  - type: web
+    name: sparkle-api
+    runtime: node
+    plan: starter # the free web plan spins down on idle — wrong for a live API
+    region: oregon
+    rootDir: backend
+    buildCommand: npm install
+    preDeployCommand: npm run migrate:up
+    startCommand: npm start
+    healthCheckPath: /healthz
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: DATABASE_URL
+        fromDatabase:
+          name: sparkle-db
+          property: connectionString
+      - key: REDIS_URL
+        fromService:
+          name: sparkle-redis
+          type: keyvalue
+          property: connectionString
+      - key: JWT_ACCESS_SECRET
+        generateValue: true
+      - key: JWT_REFRESH_SECRET
+        generateValue: true
+      - key: METRICS_TOKEN
+        generateValue: true # unauthenticated /metrics would otherwise be public
+      - key: PAYPAL_ENV
+        value: live
+      - key: PAYPAL_CLIENT_ID
+        sync: false
+      - key: PAYPAL_CLIENT_SECRET
+        sync: false
+      - key: PAYPAL_WEBHOOK_ID
+        sync: false
+      - key: CHECKR_API_KEY
+        sync: false
+      - key: GOOGLE_MAPS_KEY
+        sync: false
+      - key: TWILIO_ACCOUNT_SID
+        sync: false
+      - key: TWILIO_AUTH_TOKEN
+        sync: false
+      - key: TWILIO_PROXY_SERVICE_SID
+        sync: false
+      - key: TWILIO_FROM
+        sync: false
+      - key: TWILIO_MESSAGING_SERVICE_SID
+        sync: false
+      - key: POSTMARK_TOKEN
+        sync: false
+      - key: MAIL_FROM
+        sync: false
+      - key: APP_URL
+        sync: false # set once the real domain from Phase 1 exists
+      - key: FIREBASE_SERVICE_ACCOUNT_JSON
+        value: /etc/secrets/firebase.json # mounted via this service's Secret Files tab, see note 3 above
+      - key: FIREBASE_DATABASE_URL
+        value: https://sparkle-cleaning-d7485-default-rtdb.firebaseio.com
+      - key: AWS_REGION
+        sync: false
+      - key: AWS_ACCESS_KEY_ID
+        sync: false
+      - key: AWS_SECRET_ACCESS_KEY
+        sync: false
+      - key: S3_BUCKET
+        sync: false
+
+  - type: worker
+    name: sparkle-worker
+    runtime: node
+    plan: starter
+    region: oregon
+    rootDir: backend
+    buildCommand: npm install
+    startCommand: npm run worker
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: DATABASE_URL
+        fromDatabase:
+          name: sparkle-db
+          property: connectionString
+      - key: REDIS_URL
+        fromService:
+          name: sparkle-redis
+          type: keyvalue
+          property: connectionString
+      - key: JWT_ACCESS_SECRET
+        generateValue: true
+      - key: JWT_REFRESH_SECRET
+        generateValue: true
+      - key: WORKER_METRICS_PORT
+        value: "9101" # not externally reachable on Render (workers get no public port) — fine for now, revisit if you need to scrape it
+      - key: PAYPAL_ENV
+        value: live
+      - key: PAYPAL_CLIENT_ID
+        sync: false
+      - key: PAYPAL_CLIENT_SECRET
+        sync: false
+      - key: PAYPAL_WEBHOOK_ID
+        sync: false
+      - key: CHECKR_API_KEY
+        sync: false
+      - key: TWILIO_ACCOUNT_SID
+        sync: false
+      - key: TWILIO_AUTH_TOKEN
+        sync: false
+      - key: TWILIO_PROXY_SERVICE_SID
+        sync: false
+      - key: TWILIO_FROM
+        sync: false
+      - key: TWILIO_MESSAGING_SERVICE_SID
+        sync: false
+      - key: POSTMARK_TOKEN
+        sync: false
+      - key: MAIL_FROM
+        sync: false
+      - key: APP_URL
+        sync: false
+      - key: FIREBASE_SERVICE_ACCOUNT_JSON
+        value: /etc/secrets/firebase.json # mounted via this service's Secret Files tab too — it's separate from the API's
+      - key: FIREBASE_DATABASE_URL
+        value: https://sparkle-cleaning-d7485-default-rtdb.firebaseio.com
