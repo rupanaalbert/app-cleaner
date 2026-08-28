@@ -1,13 +1,17 @@
-import { applicationDefault, getApps, initializeApp } from 'firebase-admin/app';
+import { readFileSync } from 'node:fs';
+import { cert, getApps, initializeApp } from 'firebase-admin/app';
 import { getDatabase } from 'firebase-admin/database';
 import { getAuth } from 'firebase-admin/auth';
 import { query } from '../db/pool.js';
 import { config } from '../config/index.js';
 import { logger } from '../utils/logger.js';
 
+// FIREBASE_SERVICE_ACCOUNT_JSON is a path to the key file, not the key
+// material itself -- applicationDefault() reads GOOGLE_APPLICATION_CREDENTIALS
+// instead, which this app never sets, so it silently found no credential.
 if (!getApps().length && process.env.FIREBASE_SERVICE_ACCOUNT_JSON) {
   initializeApp({
-    credential: applicationDefault(),
+    credential: cert(JSON.parse(readFileSync(process.env.FIREBASE_SERVICE_ACCOUNT_JSON, 'utf8'))),
     databaseURL: process.env.FIREBASE_DATABASE_URL,
   });
 }

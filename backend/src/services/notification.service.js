@@ -1,10 +1,16 @@
-import { applicationDefault, getApps, initializeApp } from 'firebase-admin/app';
+import { readFileSync } from 'node:fs';
+import { cert, getApps, initializeApp } from 'firebase-admin/app';
 import { getMessaging } from 'firebase-admin/messaging';
 import { query } from '../db/pool.js';
 import { logger } from '../utils/logger.js';
 
+// See realtime.service.js's identical guard for why this is cert(), not
+// applicationDefault() -- FIREBASE_SERVICE_ACCOUNT_JSON is a file path,
+// and applicationDefault() never reads that env var.
 if (!getApps().length && process.env.FIREBASE_SERVICE_ACCOUNT_JSON) {
-  initializeApp({ credential: applicationDefault() });
+  initializeApp({
+    credential: cert(JSON.parse(readFileSync(process.env.FIREBASE_SERVICE_ACCOUNT_JSON, 'utf8'))),
+  });
 }
 
 async function push(userId, notification, data = {}) {

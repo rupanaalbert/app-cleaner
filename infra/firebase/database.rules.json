@@ -1,6 +1,6 @@
 {
   "rules": {
-    "//": "Tracking and chat live in Firebase because a 10-second GPS write is a workload Express and Postgres are both bad at. The access index below is written ONLY by the backend service account on assignment — clients cannot grant themselves access to a booking.",
+    // Tracking and chat live in Firebase because a 10-second GPS write is a workload Express and Postgres are both bad at. The access index below is written ONLY by the backend service account on assignment — clients cannot grant themselves access to a booking.
 
     "booking_access": {
       "$bookingId": {

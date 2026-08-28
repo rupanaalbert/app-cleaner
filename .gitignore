@@ -13,6 +13,8 @@ secrets/
 build/
 *.iml
 .flutter-plugins*
+google-services.json
+GoogleService-Info.plist
 
 # Editors
 .idea/
