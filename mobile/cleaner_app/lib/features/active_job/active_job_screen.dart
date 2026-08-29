@@ -3,6 +3,7 @@ import 'package:image_picker/image_picker.dart';
 import 'package:intl/intl.dart';
 
 import '../../core/theme.dart';
+import '../../core/widgets/sparkle_card.dart';
 import '../../data/chat_repository.dart';
 import '../../data/geolocation.dart';
 import '../../data/jobs_repository.dart';
@@ -63,7 +64,10 @@ class _ActiveJobScreenState extends State<ActiveJobScreen> {
   }
 
   Future<void> _load() async {
-    setState(() => _error = null);
+    setState(() {
+      _error = null;
+      _loading = true;
+    });
     try {
       final job = await widget.repository.job(widget.bookingId);
       if (!mounted) return;
@@ -177,10 +181,7 @@ class _ActiveJobScreenState extends State<ActiveJobScreen> {
     final job = _job;
     return Scaffold(
       appBar: AppBar(
-        backgroundColor: Sparkle.marine,
-        foregroundColor: Colors.white,
-        title: Text(job?.reference ?? 'Job',
-            style: const TextStyle(fontFamily: 'Archivo', fontWeight: FontWeight.w600)),
+        title: Text(job?.reference ?? 'Job'),
         actions: [
           if (widget.chat != null)
             IconButton(
@@ -449,16 +450,9 @@ class _Card extends StatelessWidget {
   final Widget child;
 
   @override
-  Widget build(BuildContext context) => Container(
+  Widget build(BuildContext context) => SizedBox(
         width: double.infinity,
-        decoration: BoxDecoration(
-          color: Sparkle.surface,
-          borderRadius: BorderRadius.circular(Sparkle.radius),
-          border: Border.all(color: Sparkle.hairline),
-          boxShadow: Sparkle.cardShadow,
-        ),
-        padding: const EdgeInsets.all(Sparkle.s4),
-        child: child,
+        child: SparkleCard(child: child),
       );
 }
 

@@ -7,6 +7,11 @@ import 'package:flutter/material.dart';
 /// So: quieter surfaces, seafoam for the single forward action, and the price
 /// ledger rendered in ink rather than an accent colour — a booking total that
 /// glows at you reads like a sales pitch, not a receipt.
+///
+/// Every value shared with the cleaner app (marine, marineDeep, seafoam,
+/// clay, ink*, hairline, mutedOnMarine, the spacing scale, radius,
+/// cardShadow, heroShadow) must stay byte-identical to
+/// `cleaner_app/lib/core/theme.dart` — see CLAUDE.md's design-language table.
 class Sparkle {
   static const marine = Color(0xFF0E3A45);
   static const marineDeep = Color(0xFF082630);
@@ -19,6 +24,7 @@ class Sparkle {
   static const ink = Color(0xFF33484F);
   static const inkSoft = Color(0xFF6B8087);
   static const hairline = Color(0xFFDCE7E4);
+  static const mutedOnMarine = Color(0xFFA9C6CD); // secondary text on marine surfaces
 
   static const s1 = 4.0, s2 = 8.0, s3 = 12.0, s4 = 16.0, s5 = 24.0, s6 = 32.0;
   static const radius = 16.0;
@@ -34,6 +40,11 @@ class Sparkle {
   ];
   static const heroShadow = [
     BoxShadow(color: Color(0x1F0E3A45), blurRadius: 28, offset: Offset(0, 10)),
+  ];
+  // Same weight as heroShadow, cast upward — for panels pinned to the bottom
+  // of the screen (the booking price ledger, the tracking bottom sheet).
+  static const stickyBarShadow = [
+    BoxShadow(color: Color(0x1F0E3A45), blurRadius: 28, offset: Offset(0, -8)),
   ];
   static const heroGradient = LinearGradient(
     begin: Alignment.topLeft,
@@ -54,12 +65,12 @@ class Sparkle {
         ),
         textTheme: const TextTheme(
           displaySmall: TextStyle(
-            fontFamily: 'Archivo', fontSize: 30, fontWeight: FontWeight.w800,
+            fontFamily: 'Manrope', fontSize: 30, fontWeight: FontWeight.w800,
             letterSpacing: -0.6, height: 1.05, color: inkStrong,
             fontFeatures: [FontFeature.tabularFigures()],
           ),
           titleLarge: TextStyle(
-            fontFamily: 'Archivo', fontSize: 22, fontWeight: FontWeight.w600,
+            fontFamily: 'Manrope', fontSize: 22, fontWeight: FontWeight.w600,
             letterSpacing: -0.4, color: inkStrong, height: 1.2,
           ),
           titleMedium: TextStyle(fontSize: 16, fontWeight: FontWeight.w600, color: inkStrong),
@@ -67,6 +78,12 @@ class Sparkle {
           labelSmall: TextStyle(
             fontSize: 11, fontWeight: FontWeight.w600, letterSpacing: 0.9, color: inkSoft,
           ),
+        ),
+        appBarTheme: const AppBarTheme(
+          backgroundColor: linen,
+          surfaceTintColor: Colors.transparent,
+          foregroundColor: inkStrong,
+          elevation: 0,
         ),
         filledButtonTheme: FilledButtonThemeData(
           style: FilledButton.styleFrom(

@@ -106,8 +106,6 @@ class _BookingFlowScreenState extends State<BookingFlowScreen> {
       builder: (context, _) {
         return Scaffold(
           appBar: AppBar(
-            backgroundColor: Sparkle.linen,
-            surfaceTintColor: Colors.transparent,
             leading: c.canGoBack
                 ? IconButton(icon: const Icon(Icons.arrow_back), onPressed: c.back)
                 : IconButton(
@@ -189,7 +187,7 @@ class _PriceLedgerState extends State<PriceLedger> {
       decoration: const BoxDecoration(
         color: Sparkle.surface,
         border: Border(top: BorderSide(color: Sparkle.hairline)),
-        boxShadow: [BoxShadow(color: Color(0x140E3A45), blurRadius: 22, offset: Offset(0, -6))],
+        boxShadow: Sparkle.stickyBarShadow,
       ),
       child: SafeArea(
         top: false,

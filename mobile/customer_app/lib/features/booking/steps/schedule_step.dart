@@ -185,14 +185,14 @@ class _DayCell extends StatelessWidget {
               DateFormat('EEE').format(day).toUpperCase(),
               style: TextStyle(
                 fontSize: 10, fontWeight: FontWeight.w700, letterSpacing: 0.8,
-                color: selected ? const Color(0xFFA9C6CD) : Sparkle.inkSoft,
+                color: selected ? Sparkle.mutedOnMarine : Sparkle.inkSoft,
               ),
             ),
             const SizedBox(height: Sparkle.s1),
             Text(
               DateFormat('d').format(day),
               style: TextStyle(
-                fontFamily: 'Archivo', fontSize: 20, fontWeight: FontWeight.w600,
+                fontFamily: 'Manrope', fontSize: 20, fontWeight: FontWeight.w600,
                 color: selected ? Colors.white : Sparkle.inkStrong,
               ),
             ),

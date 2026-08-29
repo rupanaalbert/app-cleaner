@@ -3,6 +3,7 @@ import 'package:flutter_svg/flutter_svg.dart';
 import 'package:intl/intl.dart';
 
 import '../../core/theme.dart';
+import '../../core/widgets/sparkle_card.dart';
 import '../../data/earnings_repository.dart';
 
 enum _Period { week, month, all }
@@ -51,7 +52,10 @@ class _EarningsScreenState extends State<EarningsScreen> {
   }
 
   Future<void> _load() async {
-    setState(() => _error = null);
+    setState(() {
+      _error = null;
+      _loading = true;
+    });
     try {
       final (from, to) = _window;
       final earnings = await widget.repository.fetch(from: from, to: to);
@@ -81,12 +85,7 @@ class _EarningsScreenState extends State<EarningsScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        backgroundColor: Sparkle.marine,
-        foregroundColor: Colors.white,
-        title: const Text('Earnings',
-            style: TextStyle(fontFamily: 'Archivo', fontWeight: FontWeight.w600)),
-      ),
+      appBar: AppBar(title: const Text('Earnings')),
       body: RefreshIndicator(
         onRefresh: _load,
         color: Sparkle.marine,
@@ -168,7 +167,7 @@ class _EarningsScreenState extends State<EarningsScreen> {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text('TAKE-HOME',
-                        style: Theme.of(context).textTheme.labelSmall?.copyWith(color: const Color(0xFFA9C6CD))),
+                        style: Theme.of(context).textTheme.labelSmall?.copyWith(color: Sparkle.mutedOnMarine)),
                     const SizedBox(height: Sparkle.s1),
                     Text(
                       _money.format(e.takeHomeCents / 100),
@@ -285,13 +284,7 @@ class _Card extends StatelessWidget {
   final Widget child;
 
   @override
-  Widget build(BuildContext context) => Container(
-        decoration: BoxDecoration(
-          color: Sparkle.surface,
-          borderRadius: BorderRadius.circular(Sparkle.radius),
-          border: Border.all(color: Sparkle.hairline),
-          boxShadow: Sparkle.cardShadow,
-        ),
+  Widget build(BuildContext context) => SparkleCard(
         padding: const EdgeInsets.symmetric(horizontal: Sparkle.s4, vertical: Sparkle.s1),
         child: child,
       );

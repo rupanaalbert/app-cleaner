@@ -126,7 +126,7 @@ class _TrackBookingScreenState extends State<TrackBookingScreen> {
 
     if (_error != null) {
       return Scaffold(
-        appBar: AppBar(backgroundColor: Sparkle.linen, surfaceTintColor: Colors.transparent),
+        appBar: AppBar(),
         body: Center(
           child: Padding(
             padding: const EdgeInsets.all(Sparkle.s6),
@@ -248,7 +248,7 @@ class _WaitingHeader extends StatelessWidget {
         const SizedBox(height: Sparkle.s3),
         Text(line,
             style: const TextStyle(
-                fontFamily: 'Archivo', fontSize: 20, fontWeight: FontWeight.w600, color: Colors.white)),
+                fontFamily: 'Manrope', fontSize: 20, fontWeight: FontWeight.w600, color: Colors.white)),
       ],
     );
   }
@@ -275,7 +275,7 @@ class _Sheet extends StatelessWidget {
       decoration: const BoxDecoration(
         color: Sparkle.surface,
         borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
-        boxShadow: [BoxShadow(color: Color(0x1F0E3A45), blurRadius: 28, offset: Offset(0, -8))],
+        boxShadow: Sparkle.stickyBarShadow,
       ),
       child: ListView(
         controller: controller,
@@ -375,7 +375,7 @@ class _Sheet extends StatelessWidget {
                 ? Text(
                     progress.cleanerName![0],
                     style: const TextStyle(
-                        fontFamily: 'Archivo', fontSize: 20, color: Sparkle.marine),
+                        fontFamily: 'Manrope', fontSize: 20, color: Sparkle.marine),
                   )
                 : null,
           ),

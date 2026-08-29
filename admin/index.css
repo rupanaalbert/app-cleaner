@@ -3,15 +3,9 @@
 /* Same brand fonts as the mobile apps (in each app's assets/fonts folder) —
    self-hosted here too since this is a plain Vite app, not a font service. */
 @font-face {
-  font-family: "Archivo";
-  src: url("/fonts/Archivo-SemiBold.ttf") format("truetype");
-  font-weight: 600;
-  font-display: swap;
-}
-@font-face {
-  font-family: "Archivo";
-  src: url("/fonts/Archivo-ExtraBold.ttf") format("truetype");
-  font-weight: 800;
+  font-family: "Manrope";
+  src: url("/fonts/Manrope-Variable.ttf") format("truetype-variations");
+  font-weight: 200 800;
   font-display: swap;
 }
 @font-face {
@@ -34,8 +28,42 @@
 }
 
 @theme {
-  --font-display: "Archivo", ui-sans-serif, system-ui, sans-serif;
+  --font-display: "Manrope", ui-sans-serif, system-ui, sans-serif;
   --font-sans: "Inter", ui-sans-serif, system-ui, sans-serif;
+
+  /* Same values as Sparkle in both Flutter apps' lib/core/theme.dart — keep
+     these byte-identical, see CLAUDE.md's design-language table. */
+  --color-marine: #0e3a45;
+  --color-marine-deep: #082630;
+  --color-seafoam: #12a088;
+  --color-seafoam-soft: #e2f2ee;
+  --color-clay: #c4553d;
+  --color-amber: #e9a020;
+  --color-ink-strong: #0b1f26;
+  --color-ink: #33484f;
+  --color-ink-soft: #6b8087;
+  --color-hairline: #dce7e4;
+  --color-linen: #f4f7f6;
+  --color-muted-on-marine: #a9c6cd; /* Sparkle.mutedOnMarine — secondary text on marine surfaces */
+
+  /* App-shell chrome and status-badge tints. Not in either Flutter theme.dart
+     (no equivalent screen needs them there) but reused at 2+ call sites each
+     in AdminConsole.jsx, so they're real tokens rather than one-off literals. */
+  --color-chrome: #fafbfa;
+  --color-surface-soft: #f5f8f7;
+  --color-hairline-soft: #edf2f1;
+  --color-seafoam-deep: #0c6e5d;
+  --color-amber-soft: #fdf6e7;
+  --color-amber-border: #f0d9a8;
+  --color-amber-deep: #8a6a20;
+  --color-clay-soft: #fbe9e4;
+  --color-clay-alert-bg: #fdf1ed;
+  --color-clay-alert-border: #f2c9be;
+
+  /* Same low-alpha marine tint as Sparkle.cardShadow (0x0F0E3A45, blur 14,
+     offset 0/3) — this token didn't actually exist here before, despite
+     CLAUDE.md claiming it did. */
+  --shadow-card: 0 3px 14px 0 rgb(14 58 69 / 5.9%);
 }
 
 body {

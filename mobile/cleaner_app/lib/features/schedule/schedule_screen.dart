@@ -3,6 +3,7 @@ import 'package:flutter_svg/flutter_svg.dart';
 import 'package:intl/intl.dart';
 
 import '../../core/theme.dart';
+import '../../core/widgets/sparkle_card.dart';
 import '../../data/jobs_repository.dart';
 
 /// Today's schedule — the cleaner's assigned and live jobs, soonest first.
@@ -66,12 +67,7 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
     final later = _jobs.where((j) => !j.isActive && !j.isToday).toList();
 
     return Scaffold(
-      appBar: AppBar(
-        backgroundColor: Sparkle.marine,
-        foregroundColor: Colors.white,
-        title: const Text('Schedule',
-            style: TextStyle(fontFamily: 'Archivo', fontWeight: FontWeight.w600)),
-      ),
+      appBar: AppBar(title: const Text('Schedule')),
       body: RefreshIndicator(
         onRefresh: _load,
         color: Sparkle.marine,
@@ -132,57 +128,45 @@ class _JobTile extends StatelessWidget {
     final (label, tone) = _statusChip(job.status);
     return Padding(
       padding: const EdgeInsets.only(bottom: Sparkle.s3),
-      child: Material(
-        color: Sparkle.surface,
-        borderRadius: BorderRadius.circular(Sparkle.radius),
-        child: InkWell(
-          onTap: onTap,
-          borderRadius: BorderRadius.circular(Sparkle.radius),
-          child: Container(
-            decoration: BoxDecoration(
-              color: Sparkle.surface,
-              borderRadius: BorderRadius.circular(Sparkle.radius),
-              border: Border.all(color: job.isActive ? Sparkle.seafoam : Sparkle.hairline, width: job.isActive ? 1.5 : 1),
-              boxShadow: Sparkle.cardShadow,
-            ),
-            padding: const EdgeInsets.all(Sparkle.s4),
-            child: Row(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
+      child: SparkleCard(
+        onTap: onTap,
+        borderColor: job.isActive ? Sparkle.seafoam : Sparkle.hairline,
+        borderWidth: job.isActive ? 1.5 : 1,
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
                     children: [
-                      Row(
-                        children: [
-                          _Pill(label: label, tone: tone),
-                          if (job.isDeepClean) ...[
-                            const SizedBox(width: Sparkle.s1),
-                            const _Pill(label: 'DEEP', tone: Sparkle.marine),
-                          ],
-                        ],
-                      ),
-                      const SizedBox(height: Sparkle.s2),
-                      Text(time.format(job.scheduledAt), style: Theme.of(context).textTheme.titleMedium),
-                      const SizedBox(height: 2),
-                      Text('${job.serviceName} · ${_hours(job.durationMin)} on site',
-                          style: Theme.of(context).textTheme.bodyMedium),
+                      _Pill(label: label, tone: tone),
+                      if (job.isDeepClean) ...[
+                        const SizedBox(width: Sparkle.s1),
+                        const _Pill(label: 'DEEP', tone: Sparkle.marine),
+                      ],
                     ],
                   ),
-                ),
-                const SizedBox(width: Sparkle.s3),
-                Column(
-                  crossAxisAlignment: CrossAxisAlignment.end,
-                  children: [
-                    Text(money.format(job.payoutCents / 100),
-                        style: Theme.of(context).textTheme.titleLarge?.copyWith(color: Sparkle.payout)),
-                    const SizedBox(height: Sparkle.s2),
-                    const Icon(Icons.chevron_right, color: Sparkle.inkSoft),
-                  ],
-                ),
+                  const SizedBox(height: Sparkle.s2),
+                  Text(time.format(job.scheduledAt), style: Theme.of(context).textTheme.titleMedium),
+                  const SizedBox(height: 2),
+                  Text('${job.serviceName} · ${_hours(job.durationMin)} on site',
+                      style: Theme.of(context).textTheme.bodyMedium),
+                ],
+              ),
+            ),
+            const SizedBox(width: Sparkle.s3),
+            Column(
+              crossAxisAlignment: CrossAxisAlignment.end,
+              children: [
+                Text(money.format(job.payoutCents / 100),
+                    style: Theme.of(context).textTheme.titleLarge?.copyWith(color: Sparkle.payout)),
+                const SizedBox(height: Sparkle.s2),
+                const Icon(Icons.chevron_right, color: Sparkle.inkSoft),
               ],
             ),
-          ),
+          ],
         ),
       ),
     );

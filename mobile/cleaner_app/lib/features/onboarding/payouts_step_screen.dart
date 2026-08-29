@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../../core/theme.dart';
+import '../../core/widgets/sparkle_card.dart';
 import '../../data/onboarding_repository.dart';
 
 /// PayPal payout email.
@@ -77,7 +78,7 @@ class _PayoutsStepScreenState extends State<PayoutsStepScreen> {
       appBar: AppBar(
         backgroundColor: Sparkle.mist,
         surfaceTintColor: Colors.transparent,
-        title: const Text('How you get paid', style: TextStyle(fontFamily: 'Archivo', fontSize: 18)),
+        title: const Text('How you get paid', style: TextStyle(fontFamily: 'Manrope', fontSize: 18)),
       ),
       body: RefreshIndicator(
         onRefresh: _refresh,
@@ -85,14 +86,8 @@ class _PayoutsStepScreenState extends State<PayoutsStepScreen> {
         child: ListView(
           padding: const EdgeInsets.fromLTRB(Sparkle.s4, Sparkle.s2, Sparkle.s4, Sparkle.s6),
           children: [
-            Container(
-              padding: const EdgeInsets.all(Sparkle.s4),
-              decoration: BoxDecoration(
-                color: Sparkle.surface,
-                borderRadius: BorderRadius.circular(Sparkle.radius),
-                border: Border.all(color: verified ? Sparkle.seafoam : Sparkle.hairline),
-                boxShadow: Sparkle.cardShadow,
-              ),
+            SparkleCard(
+              borderColor: verified ? Sparkle.seafoam : Sparkle.hairline,
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [

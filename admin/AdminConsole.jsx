@@ -155,7 +155,7 @@ function Console({ onSignOut }) {
   }, [disputes, say, refreshMetrics]);
 
   return (
-    <div className="flex h-screen w-full bg-[#FAFBFA] text-[#0B1F26]">
+    <div className="flex h-screen w-full bg-chrome text-ink-strong">
       <Rail
         tab={tab}
         onTab={switchTab}
@@ -171,7 +171,7 @@ function Console({ onSignOut }) {
           <QueueList items={queue} tab={tab} cursor={cursor} onSelect={setCursor} loading={loading} />
           <main className="min-w-0 flex-1 overflow-y-auto">
             {loading ? (
-              <Centered><Loader2 size={22} className="animate-spin text-[#12A088]" /></Centered>
+              <Centered><Loader2 size={22} className="animate-spin text-seafoam" /></Centered>
             ) : loadError ? (
               <LoadError message={loadError} onRetry={load} />
             ) : !current ? (
@@ -199,7 +199,7 @@ function Console({ onSignOut }) {
       {showKeys && <KeyHelp onClose={() => setShowKeys(false)} />}
       {toast && (
         <div className={`fixed bottom-16 left-1/2 -translate-x-1/2 rounded-lg px-4 py-3 text-sm text-white shadow-lg
-          ${toast.tone === "warn" ? "bg-[#C4553D]" : "bg-[#0E3A45]"}`}>
+          ${toast.tone === "warn" ? "bg-clay" : "bg-marine"}`}>
           {toast.text}
         </div>
       )}
@@ -229,11 +229,11 @@ function LoginScreen({ onSignedIn }) {
   };
 
   return (
-    <div className="flex h-screen w-full bg-[#0E3A45]">
+    <div className="flex h-screen w-full bg-marine">
       <div className="hidden w-1/2 flex-col justify-between p-10 text-white md:flex">
         <div>
           <div className="font-display text-lg font-extrabold tracking-tight">Sparkle</div>
-          <div className="text-sm text-[#A9C6CD]">Trust &amp; Safety</div>
+          <div className="text-sm text-muted-on-marine">Trust &amp; Safety</div>
         </div>
         <div className="flex flex-col items-start gap-6">
           <img src="/images/sparkle_motif.svg" width={160} height={160} alt="" className="opacity-90" />
@@ -241,48 +241,49 @@ function LoginScreen({ onSignedIn }) {
             Trust &amp; Safety for every clean
           </p>
         </div>
-        <div className="text-xs text-[#A9C6CD]">Admin console · audit-backed actions only</div>
+        <div className="text-xs text-muted-on-marine">Admin console · audit-backed actions only</div>
       </div>
       <div className="flex flex-1 items-center justify-center px-6">
       <form onSubmit={submit} className="w-full max-w-sm rounded-2xl bg-white p-7 shadow-xl">
-        <div className="flex items-center gap-2 text-[#0E3A45]">
+        <div className="flex items-center gap-2 text-marine">
           <ShieldCheck size={20} />
           <div>
             <div className="font-display text-sm font-semibold tracking-tight">Sparkle</div>
-            <div className="text-xs text-[#6B8087]">Trust &amp; Safety</div>
+            <div className="text-xs text-ink-soft">Trust &amp; Safety</div>
           </div>
         </div>
 
         <h1 className="font-display mt-6 text-lg font-semibold">Sign in</h1>
-        <p className="mt-1 text-sm text-[#6B8087]">Admin accounts only.</p>
+        <p className="mt-1 text-sm text-ink-soft">Admin accounts only.</p>
 
-        <label className="mt-5 block text-xs font-semibold uppercase tracking-wider text-[#6B8087]">Email</label>
+        <label className="mt-5 block text-xs font-semibold uppercase tracking-wider text-ink-soft">Email</label>
         <input
           type="email" autoFocus required value={email} onChange={(e) => setEmail(e.target.value)}
-          className="mt-1.5 w-full rounded border border-[#DCE7E4] p-2.5 text-sm outline-none focus:border-[#0E3A45]"
+          className="mt-1.5 w-full rounded border border-hairline p-2.5 text-sm outline-none focus:border-marine"
           placeholder="you@sparkle.app"
         />
 
-        <label className="mt-4 block text-xs font-semibold uppercase tracking-wider text-[#6B8087]">Password</label>
+        <label className="mt-4 block text-xs font-semibold uppercase tracking-wider text-ink-soft">Password</label>
         <input
           type="password" required value={password} onChange={(e) => setPassword(e.target.value)}
-          className="mt-1.5 w-full rounded border border-[#DCE7E4] p-2.5 text-sm outline-none focus:border-[#0E3A45]"
+          className="mt-1.5 w-full rounded border border-hairline p-2.5 text-sm outline-none focus:border-marine"
           placeholder="••••••••••"
         />
 
         {error && (
-          <div className="mt-4 rounded border border-[#F2C9BE] bg-[#FDF1ED] px-3 py-2 text-sm text-[#C4553D]">
+          <div className="mt-4 rounded border border-clay-alert-border bg-clay-alert-bg px-3 py-2 text-sm text-clay">
             {error}
           </div>
         )}
 
-        <button
+        <Button
           type="submit"
           disabled={busy || !email || !password}
-          className="mt-5 flex w-full items-center justify-center gap-2 rounded bg-[#12A088] px-4 py-2.5 text-sm font-medium text-white disabled:bg-[#DCE7E4] disabled:text-[#6B8087]"
+          busy={busy}
+          className="mt-5 w-full justify-center px-4 py-2.5"
         >
-          {busy && <Loader2 size={15} className="animate-spin" />} Sign in
-        </button>
+          Sign in
+        </Button>
       </form>
       </div>
     </div>
@@ -296,13 +297,13 @@ function Rail({ tab, onTab, counts, user, onSignOut }) {
       <button
         onClick={() => onTab(id)}
         className={`flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-left text-sm transition
-          ${active ? "bg-white/10 text-white" : "text-[#A9C6CD] hover:bg-white/5"}`}
+          ${active ? "bg-white/10 text-white" : "text-muted-on-marine hover:bg-white/5"}`}
       >
         <Icon size={17} />
         <span className="flex-1">{label}</span>
         {count > 0 && (
           <span className={`rounded px-1.5 py-0.5 text-xs tabular-nums
-            ${active ? "bg-white text-[#0E3A45]" : "bg-white/10 text-[#A9C6CD]"}`}>
+            ${active ? "bg-white text-marine" : "bg-white/10 text-muted-on-marine"}`}>
             {count}
           </span>
         )}
@@ -311,20 +312,20 @@ function Rail({ tab, onTab, counts, user, onSignOut }) {
   };
 
   return (
-    <aside className="flex w-56 shrink-0 flex-col bg-[#0E3A45] p-3">
+    <aside className="flex w-56 shrink-0 flex-col bg-marine p-3">
       <div className="px-3 py-4">
         <div className="font-display text-sm font-semibold tracking-tight text-white">Sparkle</div>
-        <div className="text-xs text-[#A9C6CD]">Trust &amp; Safety</div>
+        <div className="text-xs text-muted-on-marine">Trust &amp; Safety</div>
       </div>
       <nav className="mt-2 space-y-1">
         {item("vetting", "Vetting", ShieldCheck, counts.vetting)}
         {item("disputes", "Disputes", AlertTriangle, counts.disputes)}
       </nav>
       <div className="mt-auto space-y-2">
-        <div className="rounded-lg bg-white/5 p-3 text-xs leading-relaxed text-[#A9C6CD]">
+        <div className="rounded-lg bg-white/5 p-3 text-xs leading-relaxed text-muted-on-marine">
           Every action here writes an audit row. The app role has no UPDATE on that table.
         </div>
-        <div className="flex items-center justify-between gap-2 rounded-lg px-3 py-2 text-xs text-[#A9C6CD]">
+        <div className="flex items-center justify-between gap-2 rounded-lg px-3 py-2 text-xs text-muted-on-marine">
           <span className="min-w-0 truncate">{user?.email ?? user?.full_name ?? "Signed in"}</span>
           <button
             onClick={onSignOut}
@@ -341,7 +342,7 @@ function Rail({ tab, onTab, counts, user, onSignOut }) {
 
 function MetricStrip({ metrics }) {
   if (!metrics) {
-    return <div className="h-[57px] shrink-0 border-b border-[#DCE7E4] bg-white" />;
+    return <div className="h-[57px] shrink-0 border-b border-hairline bg-white" />;
   }
   const cells = [
     ["Revenue, 7d", usd(metrics.revenue_cents), false],
@@ -355,11 +356,11 @@ function MetricStrip({ metrics }) {
     ["SLA breaches", metrics.disputes_breaching_sla, metrics.disputes_breaching_sla > 0],
   ];
   return (
-    <div className="flex shrink-0 items-stretch gap-px border-b border-[#DCE7E4] bg-[#DCE7E4]">
+    <div className="flex shrink-0 items-stretch gap-px border-b border-hairline bg-hairline">
       {cells.map(([label, value, alarm]) => (
         <div key={label} className="flex-1 bg-white px-4 py-3">
-          <div className="text-[10px] font-semibold uppercase tracking-wider text-[#6B8087]">{label}</div>
-          <div className={`mt-1 text-lg font-semibold tabular-nums ${alarm ? "text-[#C4553D]" : "text-[#0B1F26]"}`}>
+          <div className="text-[10px] font-semibold uppercase tracking-wider text-ink-soft">{label}</div>
+          <div className={`mt-1 text-lg font-semibold tabular-nums ${alarm ? "text-clay" : "text-ink-strong"}`}>
             {value}
           </div>
         </div>
@@ -370,7 +371,7 @@ function MetricStrip({ metrics }) {
 
 function QueueList({ items, tab, cursor, onSelect, loading }) {
   return (
-    <div className="w-80 shrink-0 overflow-y-auto border-r border-[#DCE7E4] bg-white">
+    <div className="w-80 shrink-0 overflow-y-auto border-r border-hairline bg-white">
       {items.map((item, i) => {
         const active = i === cursor;
         const isVetting = tab === "vetting";
@@ -380,26 +381,26 @@ function QueueList({ items, tab, cursor, onSelect, loading }) {
           <button
             key={item.user_id ?? item.id}
             onClick={() => onSelect(i)}
-            className={`flex w-full items-start gap-3 border-b border-[#EDF2F1] px-4 py-3 text-left transition
-              ${active ? "bg-[#E2F2EE]" : "hover:bg-[#F5F8F7]"}`}
+            className={`flex w-full items-start gap-3 border-b border-hairline-soft px-4 py-3 text-left transition
+              ${active ? "bg-seafoam-soft" : "hover:bg-surface-soft"}`}
           >
-            <div className={`mt-1 h-2 w-2 shrink-0 rounded-full ${stale ? "bg-[#C4553D]" : "bg-[#DCE7E4]"}`} />
+            <div className={`mt-1 h-2 w-2 shrink-0 rounded-full ${stale ? "bg-clay" : "bg-hairline"}`} />
             <div className="min-w-0 flex-1">
               <div className="truncate text-sm font-medium">
                 {isVetting ? item.full_name : item.reference}
               </div>
-              <div className="mt-0.5 truncate text-xs text-[#6B8087]">
+              <div className="mt-0.5 truncate text-xs text-ink-soft">
                 {isVetting
                   ? `${item.bg_status === "clear" ? "Check clear" : `Check ${item.bg_status}`} · waiting ${waited}`
                   : `${item.category} · ${item.customer_name} · ${waited}`}
               </div>
             </div>
-            {active && <ChevronRight size={15} className="mt-1 shrink-0 text-[#12A088]" />}
+            {active && <ChevronRight size={15} className="mt-1 shrink-0 text-seafoam" />}
           </button>
         );
       })}
       {!loading && items.length === 0 && (
-        <div className="p-6 text-sm text-[#6B8087]">Queue clear.</div>
+        <div className="p-6 text-sm text-ink-soft">Queue clear.</div>
       )}
     </div>
   );
@@ -451,49 +452,49 @@ function VettingCase({ cleaner, onDecide, onVerifyDoc }) {
       <div className="flex items-start justify-between gap-6">
         <div>
           <h1 className="text-2xl font-semibold tracking-tight">{cleaner.full_name}</h1>
-          <p className="mt-1 text-sm text-[#6B8087]">
+          <p className="mt-1 text-sm text-ink-soft">
             {cleaner.email} · applied {ago(cleaner.applied_at)} · {cleaner.years_experience ?? 0} years experience
           </p>
         </div>
         <BgBadge status={cleaner.bg_status} completedAt={cleaner.bg_completed_at} />
       </div>
 
-      <p className="mt-4 text-sm leading-relaxed text-[#33484F]">{cleaner.bio}</p>
+      <p className="mt-4 text-sm leading-relaxed text-ink">{cleaner.bio}</p>
 
       <div className="mt-4 flex flex-wrap gap-2">
         {(cleaner.service_types ?? []).map((t) => (
-          <span key={t} className="rounded border border-[#DCE7E4] px-2 py-1 text-xs capitalize text-[#33484F]">
+          <span key={t} className="rounded border border-hairline px-2 py-1 text-xs capitalize text-ink">
             {t === "deep" ? "Deep clean" : "Standard"}
           </span>
         ))}
-        <span className="rounded border border-[#DCE7E4] px-2 py-1 text-xs text-[#33484F]">
+        <span className="rounded border border-hairline px-2 py-1 text-xs text-ink">
           {cleaner.service_radius_km} km radius
         </span>
         <span className={`rounded px-2 py-1 text-xs ${cleaner.payouts_enabled
-          ? "border border-[#DCE7E4] text-[#33484F]" : "bg-[#FBE9E4] text-[#C4553D]"}`}>
+          ? "border border-hairline text-ink" : "bg-clay-soft text-clay"}`}>
           {cleaner.payouts_enabled ? "Payouts ready" : "Payouts incomplete"}
         </span>
       </div>
 
       <Section title="Documents">
-        <div className="divide-y divide-[#EDF2F1] rounded-lg border border-[#DCE7E4] bg-white">
+        <div className="divide-y divide-hairline-soft rounded-lg border border-hairline bg-white">
           {cleaner.documents.map((doc) => (
             <div key={doc.id} className="flex items-center gap-3 px-4 py-3">
-              <FileText size={16} className="text-[#6B8087]" />
+              <FileText size={16} className="text-ink-soft" />
               <div className="flex-1">
                 <div className="text-sm capitalize">{doc.doc_type.replace(/_/g, " ")}</div>
-                <div className="text-xs text-[#6B8087]">
+                <div className="text-xs text-ink-soft">
                   {doc.expires_at ? `Expires ${doc.expires_at}` : "No expiry"}
                 </div>
               </div>
               {doc.verified_at ? (
-                <span className="flex items-center gap-1 text-xs font-medium text-[#12A088]">
+                <span className="flex items-center gap-1 text-xs font-medium text-seafoam">
                   <Check size={14} /> Verified
                 </span>
               ) : (
                 <button
                   onClick={() => onVerifyDoc(doc.id)}
-                  className="rounded border border-[#0E3A45] px-3 py-1.5 text-xs font-medium text-[#0E3A45] hover:bg-[#0E3A45] hover:text-white"
+                  className="rounded border border-marine px-3 py-1.5 text-xs font-medium text-marine hover:bg-marine hover:text-white"
                 >
                   Open and verify
                 </button>
@@ -501,19 +502,19 @@ function VettingCase({ cleaner, onDecide, onVerifyDoc }) {
             </div>
           ))}
           {cleaner.documents.length === 0 && (
-            <div className="px-4 py-3 text-sm text-[#6B8087]">No documents submitted yet.</div>
+            <div className="px-4 py-3 text-sm text-ink-soft">No documents submitted yet.</div>
           )}
         </div>
       </Section>
 
       {blockers.length > 0 && (
-        <div className="mt-6 rounded-lg border border-[#F0D9A8] bg-[#FDF6E7] p-4">
-          <div className="text-xs font-semibold uppercase tracking-wider text-[#8A6A20]">
+        <div className="mt-6 rounded-lg border border-amber-border bg-amber-soft p-4">
+          <div className="text-xs font-semibold uppercase tracking-wider text-amber-deep">
             Approval blocked
           </div>
           <ul className="mt-2 space-y-1">
             {blockers.map((b) => (
-              <li key={b} className="flex items-start gap-2 text-sm text-[#5C4A18]">
+              <li key={b} className="flex items-start gap-2 text-sm text-amber-deep">
                 <CircleDot size={14} className="mt-0.5 shrink-0" /> {b}
               </li>
             ))}
@@ -522,11 +523,11 @@ function VettingCase({ cleaner, onDecide, onVerifyDoc }) {
       )}
 
       {mode && (
-        <div className="mt-6 rounded-lg border border-[#DCE7E4] bg-white p-4">
+        <div className="mt-6 rounded-lg border border-hairline bg-white p-4">
           <label className="text-sm font-medium">
             {mode === "reject" ? "Why is this application rejected?" : "Why is this cleaner suspended?"}
           </label>
-          <p className="mt-1 text-xs text-[#6B8087]">
+          <p className="mt-1 text-xs text-ink-soft">
             Goes on the permanent record and into the applicant's notification. Write it for them to read.
           </p>
           <textarea
@@ -534,58 +535,57 @@ function VettingCase({ cleaner, onDecide, onVerifyDoc }) {
             value={note}
             onChange={(e) => setNote(e.target.value)}
             rows={3}
-            className="mt-2 w-full rounded border border-[#DCE7E4] p-2.5 text-sm outline-none focus:border-[#0E3A45]"
+            className="mt-2 w-full rounded border border-hairline p-2.5 text-sm outline-none focus:border-marine"
             placeholder="Insurance certificate expired before the first available shift."
           />
           {mode === "suspend" && (
             <div className="mt-3 flex items-center gap-2">
-              <span className="text-xs font-medium text-[#6B8087]">For</span>
+              <span className="text-xs font-medium text-ink-soft">For</span>
               {[7, 30, 90].map((d) => (
-                <button
+                <TogglePill
                   key={d}
+                  selected={days === d}
                   onClick={() => setDays(d)}
-                  className={`rounded border px-2.5 py-1 text-xs tabular-nums transition
-                    ${days === d ? "border-[#0E3A45] bg-[#0E3A45] text-white" : "border-[#DCE7E4] hover:bg-[#EDF2F1]"}`}
+                  className="px-2.5 py-1 text-xs tabular-nums"
                 >
                   {d} days
-                </button>
+                </TogglePill>
               ))}
             </div>
           )}
           <div className="mt-3 flex gap-2">
-            <button
+            <Button
+              variant="danger"
               disabled={note.trim().length < 3 || busy}
               onClick={() => act(mode === "reject" ? "reject" : "suspend", { reason: note.trim(), days })}
-              className="flex items-center gap-2 rounded bg-[#C4553D] px-4 py-2 text-sm font-medium text-white disabled:bg-[#DCE7E4] disabled:text-[#6B8087]"
+              busy={busy}
+              className="px-4 py-2"
             >
-              {busy && <Loader2 size={14} className="animate-spin" />}
               Confirm {mode}
-            </button>
-            <button onClick={() => { setMode(null); setNote(""); }}
-                    className="rounded px-4 py-2 text-sm text-[#33484F] hover:bg-[#EDF2F1]">
+            </Button>
+            <Button variant="ghost" onClick={() => { setMode(null); setNote(""); }} className="px-4 py-2">
               Cancel
-            </button>
+            </Button>
           </div>
         </div>
       )}
 
       <DecisionBar>
-        <button
+        <Button
           disabled={blockers.length > 0 || busy}
           onClick={() => act("approve")}
-          className="flex items-center gap-2 rounded bg-[#12A088] px-5 py-2.5 text-sm font-medium text-white disabled:bg-[#DCE7E4] disabled:text-[#6B8087]"
+          busy={busy}
+          icon={Check}
+          className="px-5 py-2.5"
         >
-          {busy ? <Loader2 size={15} className="animate-spin" /> : <Check size={15} />}
           Approve <Kbd>A</Kbd>
-        </button>
-        <button onClick={() => setMode("reject")}
-                className="flex items-center gap-2 rounded border border-[#DCE7E4] px-5 py-2.5 text-sm font-medium hover:bg-[#EDF2F1]">
-          <X size={15} /> Reject <Kbd>R</Kbd>
-        </button>
-        <button onClick={() => setMode("suspend")}
-                className="flex items-center gap-2 rounded border border-[#DCE7E4] px-5 py-2.5 text-sm font-medium hover:bg-[#EDF2F1]">
-          <Ban size={15} /> Suspend <Kbd>S</Kbd>
-        </button>
+        </Button>
+        <Button variant="outline" onClick={() => setMode("reject")} icon={X} className="px-5 py-2.5">
+          Reject <Kbd>R</Kbd>
+        </Button>
+        <Button variant="outline" onClick={() => setMode("suspend")} icon={Ban} className="px-5 py-2.5">
+          Suspend <Kbd>S</Kbd>
+        </Button>
       </DecisionBar>
     </div>
   );
@@ -593,10 +593,10 @@ function VettingCase({ cleaner, onDecide, onVerifyDoc }) {
 
 function BgBadge({ status, completedAt }) {
   const map = {
-    clear: ["bg-[#E2F2EE] text-[#0C6E5D]", "Background check clear"],
-    consider: ["bg-[#FDF6E7] text-[#8A6A20]", "Background check needs review"],
-    pending: ["bg-[#EDF2F1] text-[#6B8087]", "Background check pending"],
-    suspended: ["bg-[#FBE9E4] text-[#C4553D]", "Background check suspended"],
+    clear: ["bg-seafoam-soft text-seafoam-deep", "Background check clear"],
+    consider: ["bg-amber-soft text-amber-deep", "Background check needs review"],
+    pending: ["bg-hairline-soft text-ink-soft", "Background check pending"],
+    suspended: ["bg-clay-soft text-clay", "Background check suspended"],
   };
   const [cls, label] = map[status] ?? map.pending;
   return (
@@ -671,19 +671,19 @@ function DisputeCase({ dispute, onResolve }) {
       <div className="flex items-start justify-between gap-6">
         <div>
           <h1 className="font-mono text-xl font-semibold tracking-tight">{dispute.reference}</h1>
-          <p className="mt-1 text-sm capitalize text-[#6B8087]">
+          <p className="mt-1 text-sm capitalize text-ink-soft">
             {dispute.category.replace(/_/g, " ")} · opened {ago(dispute.created_at)} ·
             {" "}{dispute.customer_name} vs {dispute.cleaner_name ?? "unassigned"}
           </p>
         </div>
         <div className="shrink-0 text-right">
-          <div className="text-[10px] font-semibold uppercase tracking-wider text-[#6B8087]">Charged</div>
+          <div className="text-[10px] font-semibold uppercase tracking-wider text-ink-soft">Charged</div>
           <div className="text-lg font-semibold tabular-nums">{usd(dispute.captured_cents)}</div>
-          <div className="text-xs text-[#6B8087]">cleaner paid {usd(dispute.payout_cents)}</div>
+          <div className="text-xs text-ink-soft">cleaner paid {usd(dispute.payout_cents)}</div>
         </div>
       </div>
 
-      <blockquote className="mt-5 border-l-2 border-[#0E3A45] bg-white px-4 py-3 text-sm leading-relaxed text-[#33484F]">
+      <blockquote className="mt-5 border-l-2 border-marine bg-white px-4 py-3 text-sm leading-relaxed text-ink">
         {dispute.description}
       </blockquote>
 
@@ -701,19 +701,19 @@ function DisputeCase({ dispute, onResolve }) {
             detail={dispute.customer_rating ? `${dispute.customer_rating} of 5` : "Not rated"} />
         </div>
 
-        <div className="mt-3 rounded-lg border border-[#DCE7E4] bg-white">
+        <div className="mt-3 rounded-lg border border-hairline bg-white">
           {timeline.map((t, i) => (
-            <div key={i} className="flex items-center gap-3 border-b border-[#EDF2F1] px-4 py-2.5 last:border-0">
-              <div className="h-2 w-2 rounded-full bg-[#12A088]" />
+            <div key={i} className="flex items-center gap-3 border-b border-hairline-soft px-4 py-2.5 last:border-0">
+              <div className="h-2 w-2 rounded-full bg-seafoam" />
               <div className="flex-1 text-sm capitalize">{t.to_status.replace(/_/g, " ")}</div>
-              {t.geofence && <span className="text-xs text-[#6B8087]">{t.geofence}</span>}
-              <span className="font-mono text-xs tabular-nums text-[#6B8087]">
+              {t.geofence && <span className="text-xs text-ink-soft">{t.geofence}</span>}
+              <span className="font-mono text-xs tabular-nums text-ink-soft">
                 {new Date(t.created_at).toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit" })}
               </span>
             </div>
           ))}
           {timeline.length === 0 && (
-            <div className="px-4 py-3 text-sm text-[#6B8087]">
+            <div className="px-4 py-3 text-sm text-ink-soft">
               {detailLoading ? "Loading timeline…" : "No status events recorded."}
             </div>
           )}
@@ -723,19 +723,17 @@ function DisputeCase({ dispute, onResolve }) {
       <Section title="Refund">
         <div className="flex flex-wrap gap-2">
           {presets.map(([label, cents]) => (
-            <button
+            <TogglePill
               key={label}
+              selected={refund === cents}
               onClick={() => setRefund(cents)}
-              className={`rounded border px-3 py-2 text-sm tabular-nums transition
-                ${refund === cents
-                  ? "border-[#0E3A45] bg-[#0E3A45] text-white"
-                  : "border-[#DCE7E4] bg-white hover:bg-[#EDF2F1]"}`}
+              className="px-3 py-2 text-sm tabular-nums"
             >
               {label} · {usd(cents)}
-            </button>
+            </TogglePill>
           ))}
         </div>
-        <p className="mt-2 text-xs text-[#6B8087]">
+        <p className="mt-2 text-xs text-ink-soft">
           Refunds reverse the cleaner's transfer proportionally. Refundable balance {usd(refundable)}.
         </p>
       </Section>
@@ -748,19 +746,12 @@ function DisputeCase({ dispute, onResolve }) {
             ["coaching", "Coaching"],
             ["suspend", "Suspend"],
           ].map(([value, label]) => (
-            <button
-              key={value}
-              onClick={() => setPenalty(value)}
-              className={`rounded border px-3 py-2 text-sm transition
-                ${penalty === value
-                  ? "border-[#0E3A45] bg-[#0E3A45] text-white"
-                  : "border-[#DCE7E4] bg-white hover:bg-[#EDF2F1]"}`}
-            >
+            <TogglePill key={value} selected={penalty === value} onClick={() => setPenalty(value)} className="px-3 py-2 text-sm">
               {label}
-            </button>
+            </TogglePill>
           ))}
         </div>
-        <p className="mt-2 text-xs text-[#6B8087]">
+        <p className="mt-2 text-xs text-ink-soft">
           Deliberately separate from the refund. A broken lockbox makes the customer whole and the
           cleaner blameless — coupling the two teaches agents to under-refund to protect good cleaners.
         </p>
@@ -771,21 +762,22 @@ function DisputeCase({ dispute, onResolve }) {
           value={resolution}
           onChange={(e) => setResolution(e.target.value)}
           rows={3}
-          className="w-full rounded border border-[#DCE7E4] bg-white p-2.5 text-sm outline-none focus:border-[#0E3A45]"
+          className="w-full rounded border border-hairline bg-white p-2.5 text-sm outline-none focus:border-marine"
           placeholder="Photos show the bathrooms were cleaned; time on site was short but within range. Partial refund as a goodwill gesture, no fault recorded."
         />
       </Section>
 
       <DecisionBar>
-        <button
+        <Button
           disabled={resolution.trim().length < 3 || busy}
           onClick={submit}
-          className="flex items-center gap-2 rounded bg-[#12A088] px-5 py-2.5 text-sm font-medium text-white disabled:bg-[#DCE7E4] disabled:text-[#6B8087]"
+          busy={busy}
+          icon={Check}
+          className="px-5 py-2.5"
         >
-          {busy ? <Loader2 size={15} className="animate-spin" /> : <Check size={15} />}
           Resolve and close
-        </button>
-        <span className="self-center text-xs text-[#6B8087]">
+        </Button>
+        <span className="self-center text-xs text-ink-soft">
           {refund > 0 ? `${usd(refund)} back to ${dispute.customer_name}` : "No money moves"}
           {penalty !== "none" && ` · ${penalty.replace(/_/g, " ")}`}
         </span>
@@ -796,12 +788,12 @@ function DisputeCase({ dispute, onResolve }) {
 
 function Evidence({ icon: Icon, label, ok, detail }) {
   return (
-    <div className={`rounded-lg border p-3 ${ok ? "border-[#DCE7E4] bg-white" : "border-[#F2C9BE] bg-[#FDF1ED]"}`}>
+    <div className={`rounded-lg border p-3 ${ok ? "border-hairline bg-white" : "border-clay-alert-border bg-clay-alert-bg"}`}>
       <div className="flex items-center gap-2">
-        <Icon size={15} className={ok ? "text-[#12A088]" : "text-[#C4553D]"} />
-        <span className="text-xs font-semibold uppercase tracking-wider text-[#6B8087]">{label}</span>
+        <Icon size={15} className={ok ? "text-seafoam" : "text-clay"} />
+        <span className="text-xs font-semibold uppercase tracking-wider text-ink-soft">{label}</span>
       </div>
-      <div className="mt-1.5 text-sm text-[#33484F]">{detail}</div>
+      <div className="mt-1.5 text-sm text-ink">{detail}</div>
     </div>
   );
 }
@@ -809,13 +801,13 @@ function Evidence({ icon: Icon, label, ok, detail }) {
 // ------------------------------------------------------------------ pieces --
 const Section = ({ title, children }) => (
   <section className="mt-7">
-    <h2 className="mb-2.5 text-xs font-semibold uppercase tracking-wider text-[#6B8087]">{title}</h2>
+    <h2 className="mb-2.5 text-xs font-semibold uppercase tracking-wider text-ink-soft">{title}</h2>
     {children}
   </section>
 );
 
 const DecisionBar = ({ children }) => (
-  <div className="sticky bottom-0 mt-8 flex flex-wrap gap-2 border-t border-[#DCE7E4] bg-[#FAFBFA] py-4">
+  <div className="sticky bottom-0 mt-8 flex flex-wrap gap-2 border-t border-hairline bg-chrome py-4">
     {children}
   </div>
 );
@@ -824,6 +816,42 @@ const Kbd = ({ children }) => (
   <kbd className="rounded bg-black/15 px-1.5 py-0.5 font-mono text-[10px] leading-none">{children}</kbd>
 );
 
+// Color/hover treatment only — every call site supplies its own padding via
+// `className` so there's no risk of two utilities fighting over the same
+// property. `busy` swaps in a spinner in place of `icon`.
+const BUTTON_VARIANTS = {
+  primary: "bg-seafoam text-white disabled:bg-hairline disabled:text-ink-soft",
+  danger: "bg-clay text-white disabled:bg-hairline disabled:text-ink-soft",
+  outline: "border border-hairline hover:bg-hairline-soft",
+  ghost: "text-ink hover:bg-hairline-soft",
+};
+function Button({ variant = "primary", busy, icon: Icon, className = "", children, ...props }) {
+  return (
+    <button
+      className={`flex items-center gap-2 rounded text-sm font-medium transition ${BUTTON_VARIANTS[variant]} ${className}`}
+      {...props}
+    >
+      {busy ? <Loader2 size={15} className="animate-spin" /> : Icon ? <Icon size={15} /> : null}
+      {children}
+    </button>
+  );
+}
+
+// Selectable option chip — suspend duration, refund preset, penalty choice.
+// Sizing lives in `className` per call site for the same reason as Button.
+function TogglePill({ selected, className = "", children, ...props }) {
+  return (
+    <button
+      className={`rounded border transition
+        ${selected ? "border-marine bg-marine text-white" : "border-hairline bg-white hover:bg-hairline-soft"}
+        ${className}`}
+      {...props}
+    >
+      {children}
+    </button>
+  );
+}
+
 const Centered = ({ children }) => (
   <div className="flex h-full items-center justify-center">{children}</div>
 );
@@ -831,12 +859,12 @@ const Centered = ({ children }) => (
 function LoadError({ message, onRetry }) {
   return (
     <div className="flex h-full flex-col items-center justify-center px-8 text-center">
-      <AlertTriangle size={32} className="text-[#C4553D]" />
+      <AlertTriangle size={32} className="text-clay" />
       <h2 className="mt-4 text-lg font-semibold">Couldn’t load the queue</h2>
-      <p className="mt-1 max-w-sm text-sm text-[#6B8087]">{message}</p>
+      <p className="mt-1 max-w-sm text-sm text-ink-soft">{message}</p>
       <button
         onClick={onRetry}
-        className="mt-4 rounded bg-[#0E3A45] px-4 py-2 text-sm font-medium text-white hover:bg-[#0B1F26]"
+        className="mt-4 rounded bg-marine px-4 py-2 text-sm font-medium text-white hover:bg-ink-strong"
       >
         Try again
       </button>
@@ -847,7 +875,7 @@ function LoadError({ message, onRetry }) {
 function ShortcutBar({ onOpen }) {
   return (
     <button onClick={onOpen}
-      className="flex shrink-0 items-center gap-2 border-t border-[#DCE7E4] bg-white px-4 py-2 text-xs text-[#6B8087] hover:bg-[#F5F8F7]">
+      className="flex shrink-0 items-center gap-2 border-t border-hairline bg-white px-4 py-2 text-xs text-ink-soft hover:bg-surface-soft">
       <Keyboard size={13} />
       <span><span className="font-mono">J</span>/<span className="font-mono">K</span> move ·
         {" "}<span className="font-mono">A</span> approve ·
@@ -871,8 +899,8 @@ function KeyHelp({ onClose }) {
         <div className="mt-3 space-y-2">
           {rows.map(([key, what]) => (
             <div key={key} className="flex items-center justify-between text-sm">
-              <span className="font-mono text-xs text-[#0E3A45]">{key}</span>
-              <span className="text-[#33484F]">{what}</span>
+              <span className="font-mono text-xs text-marine">{key}</span>
+              <span className="text-ink">{what}</span>
             </div>
           ))}
         </div>
@@ -888,7 +916,7 @@ function EmptyQueue({ tab }) {
       <h2 className="font-display mt-4 text-lg font-semibold">
         {tab === "vetting" ? "No applications waiting" : "No open disputes"}
       </h2>
-      <p className="mt-1 max-w-sm text-sm text-[#6B8087]">
+      <p className="mt-1 max-w-sm text-sm text-ink-soft">
         {tab === "vetting"
           ? "New applicants land here the moment their background check returns."
           : "Disputes appear here when a customer opens one, or when PayPal reports a chargeback."}

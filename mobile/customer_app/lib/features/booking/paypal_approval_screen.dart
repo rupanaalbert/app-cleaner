@@ -59,8 +59,6 @@ class _PaypalApprovalScreenState extends State<PaypalApprovalScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        backgroundColor: Sparkle.linen,
-        surfaceTintColor: Colors.transparent,
         title: const Text('Approve with PayPal'),
         leading: IconButton(
           icon: const Icon(Icons.close),

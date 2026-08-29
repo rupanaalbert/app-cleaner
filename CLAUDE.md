@@ -56,7 +56,7 @@ Shared marine (`#0E3A45`) across all three surfaces, different accents by job:
 
 Don't introduce a fourth palette. If a colour needs to mean something new, say what it means here first.
 
-All three surfaces also now share one depth and type system: a low-alpha marine `cardShadow` (`Sparkle.cardShadow` in each Flutter app's `theme.dart`; hand-written in `admin/index.css`) on every lifted card, the same self-hosted Archivo/Inter fonts, and the same sparkle-motif/hero SVGs. Added 2026-08-27 — see BACKLOG.md.
+All three surfaces also now share one depth and type system: a low-alpha marine `cardShadow` (`Sparkle.cardShadow` in each Flutter app's `theme.dart`, wrapped by the shared `SparkleCard` widget in each app's `lib/core/widgets/`; `--shadow-card` in `admin/index.css`) on every lifted card, the same self-hosted Manrope/Inter fonts (Manrope replaced Archivo 2026-08-29 — sharper geometric display face), and the same Higgsfield-sourced flat-duotone sparkle-motif/hero/empty-state art. `Sparkle.seafoam`/`hairline`/`radius` are now byte-identical across both Flutter apps (they'd drifted); `Sparkle.mutedOnMarine` (`#A9C6CD`, secondary text on marine) and every other shared value has a same-named token in `admin/index.css` too — the admin console previously had zero color tokens and 92 hardcoded hex literals in `AdminConsole.jsx`, now all replaced. Full detail in BACKLOG.md item 12.
 
 ## Known stubs and rough edges
 
@@ -85,5 +85,6 @@ See `BACKLOG.md` — all ten backlog items are done, both Flutter apps analyze c
 - `CUSTOMER.DISPUTE.CREATED`'s webhook shape is still unconfirmed against a real PayPal sandbox dispute.
 - `completed` still 409s (`NOT_AUTHORIZED`) on the seeded active job — `payment.service.js` requires a live PayPal authorization to capture against, and this booking's is seeded/fake, not real. Unrelated to Firebase; would need a real sandbox authorization (see the PayPal spike note above) to exercise live.
 - Neither mobile app has had a device pass against the now-real Firebase project yet — the fix above was verified via direct API calls, not through either app's actual chat/tracking UI.
+- The last few Phase 3 design-polish edits (`payouts_step_screen.dart`, `home_step.dart`, `review_step.dart` — all pure `SparkleCard` delegation) haven't had a fresh emulator pass; host memory was too tight when they landed. Low risk (parameters verified against the original decorations by direct code comparison), but worth confirming next time an emulator is already up for other work. See BACKLOG.md item 12.
 
 If this machine has a native PostgreSQL already listening on 5432 (check `netstat -ano | findstr 5432` — `docker compose`'s port mapping will silently point at it instead of the container, surfacing as `password authentication failed for user "sparkle"`), remap the container to another host port rather than assuming the docker-compose config is wrong. This machine specifically already has `infra-db-1`/`infra-redis-1` containers holding seeded data on 5433/6379 from prior sessions — `docker start` them rather than creating new ones, which will collide on the same ports.

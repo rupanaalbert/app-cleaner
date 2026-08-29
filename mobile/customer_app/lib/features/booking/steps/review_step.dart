@@ -5,6 +5,7 @@ import 'package:flutter_svg/flutter_svg.dart';
 import 'package:intl/intl.dart';
 
 import '../../../core/theme.dart';
+import '../../../core/widgets/sparkle_card.dart';
 import '../../../data/booking_repository.dart';
 import '../booking_controller.dart';
 import '../booking_flow_screen.dart' show dollars;
@@ -178,18 +179,10 @@ class _Card extends StatelessWidget {
   final List<Widget> children;
 
   @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: Sparkle.s4, vertical: Sparkle.s2),
-      decoration: BoxDecoration(
-        color: Sparkle.surface,
-        borderRadius: BorderRadius.circular(Sparkle.radius),
-        border: Border.all(color: Sparkle.hairline),
-        boxShadow: Sparkle.cardShadow,
-      ),
-      child: Column(children: children),
-    );
-  }
+  Widget build(BuildContext context) => SparkleCard(
+        padding: const EdgeInsets.symmetric(horizontal: Sparkle.s4, vertical: Sparkle.s2),
+        child: Column(children: children),
+      );
 }
 
 class _Row extends StatelessWidget {

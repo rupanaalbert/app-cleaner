@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../../core/theme.dart';
+import '../../core/widgets/sparkle_card.dart';
 import '../../data/onboarding_repository.dart';
 
 /// Document upload.
@@ -89,7 +90,7 @@ class _DocumentsStepScreenState extends State<DocumentsStepScreen> {
       appBar: AppBar(
         backgroundColor: Sparkle.mist,
         surfaceTintColor: Colors.transparent,
-        title: const Text('Documents', style: TextStyle(fontFamily: 'Archivo', fontSize: 18)),
+        title: const Text('Documents', style: TextStyle(fontFamily: 'Manrope', fontSize: 18)),
       ),
       body: ListView(
         padding: const EdgeInsets.fromLTRB(Sparkle.s4, Sparkle.s2, Sparkle.s4, Sparkle.s6),
@@ -132,14 +133,8 @@ class _DocumentCard extends StatelessWidget {
             ? Sparkle.seafoam
             : Sparkle.hairline;
 
-    return Container(
-      padding: const EdgeInsets.all(Sparkle.s4),
-      decoration: BoxDecoration(
-        color: Sparkle.surface,
-        borderRadius: BorderRadius.circular(Sparkle.radius),
-        border: Border.all(color: borderColor),
-        boxShadow: Sparkle.cardShadow,
-      ),
+    return SparkleCard(
+      borderColor: borderColor,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [

@@ -115,12 +115,7 @@ class _ChatScreenState extends State<ChatScreen> {
   Widget build(BuildContext context) {
     final me = widget.repository.currentUserId;
     return Scaffold(
-      appBar: AppBar(
-        backgroundColor: Sparkle.marine,
-        foregroundColor: Colors.white,
-        title: Text(widget.title,
-            style: const TextStyle(fontFamily: 'Archivo', fontWeight: FontWeight.w600)),
-      ),
+      appBar: AppBar(title: Text(widget.title)),
       body: Column(
         children: [
           Expanded(child: _list(me)),
@@ -246,7 +241,7 @@ class _Bubble extends StatelessWidget {
             Text(body, style: TextStyle(fontSize: 15, height: 1.35, color: mine ? Colors.white : Sparkle.inkStrong)),
             const SizedBox(height: 2),
             Text(time,
-                style: TextStyle(fontSize: 10, color: mine ? const Color(0xFFA9C6CD) : Sparkle.inkSoft)),
+                style: TextStyle(fontSize: 10, color: mine ? Sparkle.mutedOnMarine : Sparkle.inkSoft)),
           ],
         ),
       ),

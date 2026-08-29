@@ -7,6 +7,11 @@ import 'package:flutter/material.dart';
 /// for money, and type large enough to read at a glance. Amber appears nowhere
 /// except payouts — when a cleaner scans the screen, the gold number is always
 /// the number they care about.
+///
+/// Every value shared with the customer app (marine, marineDeep, seafoam,
+/// clay, ink*, hairline, mutedOnMarine, the spacing scale, radius,
+/// cardShadow, heroShadow) must stay byte-identical to
+/// `customer_app/lib/core/theme.dart` — see CLAUDE.md's design-language table.
 class Sparkle {
   // Palette
   static const marine = Color(0xFF0E3A45); // primary ground, headers
@@ -14,17 +19,18 @@ class Sparkle {
   static const mist = Color(0xFFEDF4F2); // app background
   static const surface = Color(0xFFFFFFFF);
   static const payout = Color(0xFFE9A020); // money, and only money
-  static const seafoam = Color(0xFF1FA98F); // positive/confirm
+  static const seafoam = Color(0xFF12A088); // positive/confirm
   static const clay = Color(0xFFC4553D); // expiring, destructive
   static const inkStrong = Color(0xFF0B1F26);
   static const ink = Color(0xFF33484F);
   static const inkSoft = Color(0xFF6B8087);
-  static const hairline = Color(0xFFD7E3E0);
+  static const hairline = Color(0xFFDCE7E4);
+  static const mutedOnMarine = Color(0xFFA9C6CD); // secondary text on marine surfaces
   static const seafoamSoft = Color(0xFFE2F2EE); // selected/success states
 
   // Spacing scale — 4pt base, no arbitrary values in widgets.
   static const s1 = 4.0, s2 = 8.0, s3 = 12.0, s4 = 16.0, s5 = 24.0, s6 = 32.0;
-  static const radius = 18.0;
+  static const radius = 16.0;
 
   // Depth for surfaces that should read as tappable/liftable rather than flat
   // — a card, not a form row. Same low-alpha marine tint used across all
@@ -35,6 +41,11 @@ class Sparkle {
   static const heroShadow = [
     BoxShadow(color: Color(0x1F0E3A45), blurRadius: 28, offset: Offset(0, 10)),
   ];
+  // Same weight as heroShadow, cast upward — for panels pinned to the bottom
+  // of the screen (shared with the customer app's price ledger/tracking sheet).
+  static const stickyBarShadow = [
+    BoxShadow(color: Color(0x1F0E3A45), blurRadius: 28, offset: Offset(0, -8)),
+  ];
   static const heroGradient = LinearGradient(
     begin: Alignment.topLeft,
     end: Alignment.bottomRight,
@@ -42,7 +53,7 @@ class Sparkle {
   );
 
   static ThemeData theme() {
-    const display = 'Archivo';
+    const display = 'Manrope';
     const body = 'Inter';
 
     return ThemeData(
@@ -70,6 +81,14 @@ class Sparkle {
         bodyMedium: TextStyle(fontSize: 14, height: 1.4, color: ink),
         labelSmall: TextStyle(
           fontSize: 11, fontWeight: FontWeight.w600, letterSpacing: 0.8, color: inkSoft,
+        ),
+      ),
+      appBarTheme: const AppBarTheme(
+        backgroundColor: marine,
+        foregroundColor: Colors.white,
+        elevation: 0,
+        titleTextStyle: TextStyle(
+          fontFamily: display, fontWeight: FontWeight.w600, fontSize: 20, color: Colors.white,
         ),
       ),
       filledButtonTheme: FilledButtonThemeData(

@@ -200,7 +200,7 @@ class _JobDiscoveryScreenState extends State<JobDiscoveryScreen> {
           children: [
             Text(
               _offers.isEmpty ? 'Jobs near you' : '${_offers.length} jobs near you',
-              style: const TextStyle(fontFamily: 'Archivo', fontSize: 18, fontWeight: FontWeight.w600),
+              style: const TextStyle(fontFamily: 'Manrope', fontSize: 18, fontWeight: FontWeight.w600),
             ),
           ],
         ),
@@ -219,7 +219,7 @@ class _JobDiscoveryScreenState extends State<JobDiscoveryScreen> {
                     const SizedBox(height: 2),
                     Text(
                       _online ? 'We\'ll notify you when work comes in' : 'Turn on to start receiving offers',
-                      style: const TextStyle(color: Color(0xFFA9C6CD), fontSize: 13),
+                      style: const TextStyle(color: Sparkle.mutedOnMarine, fontSize: 13),
                       overflow: TextOverflow.ellipsis,
                     ),
                   ],

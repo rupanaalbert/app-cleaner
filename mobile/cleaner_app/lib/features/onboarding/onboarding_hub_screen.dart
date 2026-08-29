@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 
 import '../../core/theme.dart';
+import '../../core/widgets/sparkle_card.dart';
 import '../../data/onboarding_repository.dart';
 
 /// Onboarding hub.
@@ -194,14 +195,14 @@ class _Header extends StatelessWidget {
             children: [
               const Text('Getting you approved',
                   style: TextStyle(
-                      fontFamily: 'Archivo', fontSize: 24, fontWeight: FontWeight.w800,
+                      fontFamily: 'Manrope', fontSize: 24, fontWeight: FontWeight.w800,
                       color: Colors.white, letterSpacing: -0.5)),
               const SizedBox(height: Sparkle.s2),
               Text(
                 state.approved
                     ? 'You\'re approved. Turn on Accepting jobs to start receiving offers.'
                     : 'Four tasks, and you can do them in any order. Start the background check first — it takes the longest.',
-                style: const TextStyle(color: Color(0xFFA9C6CD), fontSize: 14, height: 1.45),
+                style: const TextStyle(color: Sparkle.mutedOnMarine, fontSize: 14, height: 1.45),
               ),
               const SizedBox(height: Sparkle.s4),
               Row(
@@ -246,63 +247,56 @@ class _TaskTile extends StatelessWidget {
     return Semantics(
       button: !locked,
       label: '${step.title}. ${step.complete ? "Done" : step.detail}',
-      child: InkWell(
+      child: SparkleCard(
         onTap: locked || step.complete ? null : onTap,
-        borderRadius: BorderRadius.circular(Sparkle.radius),
-        child: Container(
-          padding: const EdgeInsets.all(Sparkle.s4),
-          decoration: BoxDecoration(
-            color: Sparkle.surface,
-            borderRadius: BorderRadius.circular(Sparkle.radius),
-            border: Border.all(color: step.complete ? Sparkle.seafoam : Sparkle.hairline),
-            boxShadow: Sparkle.cardShadow,
-          ),
-          child: Row(
-            children: [
-              Container(
-                height: 28,
-                width: 28,
-                decoration: BoxDecoration(
-                  shape: BoxShape.circle,
-                  color: step.complete
-                      ? Sparkle.seafoam
-                      : waiting
-                          ? const Color(0xFFFDF6E7)
-                          : Sparkle.mist,
-                  border: Border.all(
-                      color: step.complete ? Sparkle.seafoam : Sparkle.hairline, width: 1.5),
-                ),
-                child: Icon(
-                  step.complete
-                      ? Icons.check
-                      : waiting
-                          ? Icons.hourglass_bottom
-                          : Icons.arrow_forward,
-                  size: 15,
-                  color: step.complete ? Colors.white : Sparkle.inkSoft,
-                ),
+        borderColor: step.complete ? Sparkle.seafoam : Sparkle.hairline,
+        child: Row(
+          children: [
+            Container(
+              height: 28,
+              width: 28,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                color: step.complete
+                    ? Sparkle.seafoam
+                    : waiting
+                        ? const Color(0xFFFDF6E7)
+                        : Sparkle.mist,
+                border: Border.all(
+                    color: step.complete ? Sparkle.seafoam : Sparkle.hairline, width: 1.5),
               ),
-              const SizedBox(width: Sparkle.s3),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(step.title, style: Theme.of(context).textTheme.titleMedium),
-                    const SizedBox(height: 2),
-                    Text(step.detail,
-                        style: const TextStyle(fontSize: 13, color: Sparkle.inkSoft, height: 1.35)),
-                  ],
-                ),
+              child: Icon(
+                step.complete
+                    ? Icons.check
+                    : waiting
+                        ? Icons.hourglass_bottom
+                        : Icons.arrow_forward,
+                size: 15,
+                color: step.complete ? Colors.white : Sparkle.inkSoft,
               ),
-              if (!step.complete && !locked && !waiting)
-                const Icon(Icons.chevron_right, color: Sparkle.inkSoft),
-            ],
-          ),
+            ),
+            const SizedBox(width: Sparkle.s3),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(step.title, style: Theme.of(context).textTheme.titleMedium),
+                  const SizedBox(height: 2),
+                  Text(step.detail,
+                      style: const TextStyle(fontSize: 13, color: Sparkle.inkSoft, height: 1.35)),
+                ],
+              ),
+            ),
+            if (!step.complete && !locked && !waiting)
+              const Icon(Icons.chevron_right, color: Sparkle.inkSoft),
+          ],
         ),
       ),
     );
   }
 }
+
+
 
 class _SubmittedNotice extends StatelessWidget {
   const _SubmittedNotice({required this.state});
@@ -311,14 +305,9 @@ class _SubmittedNotice extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final approved = state.approved;
-    return Container(
-      padding: const EdgeInsets.all(Sparkle.s4),
-      decoration: BoxDecoration(
-        color: approved ? Sparkle.seafoamSoft : Sparkle.surface,
-        borderRadius: BorderRadius.circular(Sparkle.radius),
-        border: Border.all(color: approved ? Sparkle.seafoam : Sparkle.hairline),
-        boxShadow: Sparkle.cardShadow,
-      ),
+    return SparkleCard(
+      color: approved ? Sparkle.seafoamSoft : Sparkle.surface,
+      borderColor: approved ? Sparkle.seafoam : Sparkle.hairline,
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [

@@ -29,12 +29,9 @@ flutter:
   assets:
     - assets/images/
   fonts:
-    - family: Archivo
+    - family: Manrope
       fonts:
-        - asset: assets/fonts/Archivo-SemiBold.ttf
-          weight: 600
-        - asset: assets/fonts/Archivo-ExtraBold.ttf
-          weight: 800
+        - asset: assets/fonts/Manrope-Variable.ttf
     - family: Inter
       fonts:
         - asset: assets/fonts/Inter-Regular.ttf

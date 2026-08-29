@@ -119,7 +119,7 @@ class _ChatScreenState extends State<ChatScreen> {
         backgroundColor: Sparkle.marine,
         foregroundColor: Colors.white,
         title: Text(widget.title,
-            style: const TextStyle(fontFamily: 'Archivo', fontWeight: FontWeight.w600)),
+            style: const TextStyle(fontFamily: 'Manrope', fontWeight: FontWeight.w600)),
       ),
       body: Column(
         children: [

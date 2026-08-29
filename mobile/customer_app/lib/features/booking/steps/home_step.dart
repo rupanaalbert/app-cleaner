@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
 import '../../../core/theme.dart';
+import '../../../core/widgets/sparkle_card.dart';
 import '../booking_controller.dart';
 import '../widgets/hero_banner.dart';
 
@@ -78,18 +79,7 @@ class _SectionCard extends StatelessWidget {
   final Widget child;
 
   @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.all(Sparkle.s4),
-      decoration: BoxDecoration(
-        color: Sparkle.surface,
-        borderRadius: BorderRadius.circular(Sparkle.radius),
-        border: Border.all(color: Sparkle.hairline),
-        boxShadow: Sparkle.cardShadow,
-      ),
-      child: child,
-    );
-  }
+  Widget build(BuildContext context) => SparkleCard(child: child);
 }
 
 class _Stepper extends StatelessWidget {
@@ -125,7 +115,7 @@ class _Stepper extends StatelessWidget {
             '$value',
             textAlign: TextAlign.center,
             style: const TextStyle(
-              fontFamily: 'Archivo', fontSize: 22, fontWeight: FontWeight.w600,
+              fontFamily: 'Manrope', fontSize: 22, fontWeight: FontWeight.w600,
               fontFeatures: [FontFeature.tabularFigures()],
             ),
           ),
