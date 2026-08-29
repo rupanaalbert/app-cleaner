@@ -81,7 +81,7 @@ When you add logic to pricing or ranking, add the test in the same commit. These
 
 See `BACKLOG.md` — all ten backlog items are done, both Flutter apps analyze clean and have been through a real device pass, both point at the real backend by default, and the admin console's negative-median-match bug is fixed. Remaining gaps worth picking up next:
 
-- The admin console's reject/suspend/resolve flows still haven't been exercised end-to-end (item 4) — they share the same optimistic-update pattern already proven by approve, so this is coverage, not a known break.
+- **Reject/suspend/resolve now verified end-to-end (2026-08-29)** — see BACKLOG.md item 4. The no-refund resolve path works live; resolving a dispute with a nonzero refund still hits the same seeded-payment gap as the next bullet (no real PayPal capture to refund against), and is deliberately left unpatched — see that entry for why the 500 is correct behavior, not a bug.
 - `CUSTOMER.DISPUTE.CREATED`'s webhook shape is still unconfirmed against a real PayPal sandbox dispute.
 - `completed` still 409s (`NOT_AUTHORIZED`) on the seeded active job — `payment.service.js` requires a live PayPal authorization to capture against, and this booking's is seeded/fake, not real. Unrelated to Firebase; would need a real sandbox authorization (see the PayPal spike note above) to exercise live.
 - Neither mobile app has had a device pass against the now-real Firebase project yet — the fix above was verified via direct API calls, not through either app's actual chat/tracking UI.
