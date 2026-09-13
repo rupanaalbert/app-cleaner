@@ -103,10 +103,15 @@ class _ActiveJobScreenState extends State<ActiveJobScreen> {
       (_job?.isDeepClean ?? false) && _job?.status == 'in_progress' && _afterPhotos < _requiredAfterPhotos;
 
   Future<void> _advance(_Step step) async {
+    // Resolved before any `await` below — SparkleStrings.of(context) after an
+    // await would read a possibly-disposed context (flutter analyze's
+    // use_build_context_synchronously).
+    final s = SparkleStrings.of(context);
+
     // Mirror the server gate so the cleaner is told to shoot photos before the
     // request is spent, not after a 422.
     if (step.status == 'completed' && _photosOutstanding) {
-      _say(SparkleStrings.of(context).needAfterPhotos(_requiredAfterPhotos), Sparkle.clay);
+      _say(s.needAfterPhotos(_requiredAfterPhotos), Sparkle.clay);
       return;
     }
 
@@ -123,7 +128,7 @@ class _ActiveJobScreenState extends State<ActiveJobScreen> {
       if (step.status == 'arrived') await widget.tracker?.stop();
 
       if (step.status == 'completed') {
-        _say(SparkleStrings.of(context).jobCompletePayout, Sparkle.seafoam);
+        _say(s.jobCompletePayout, Sparkle.seafoam);
       }
       await _load();
     } on LocationUnavailable catch (e) {
