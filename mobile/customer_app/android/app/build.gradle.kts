@@ -27,6 +27,10 @@ android {
         // flag during build.
         versionCode = flutter.versionCode
         versionName = flutter.versionName
+        // flutter_web_auth_2's CallbackActivity intercepts this scheme when
+        // PayPal (opened in the system browser, not an in-app WebView)
+        // redirects back to `sparkle://booking/paypal/...`.
+        manifestPlaceholders["appAuthRedirectScheme"] = "sparkle"
     }
 
     buildTypes {

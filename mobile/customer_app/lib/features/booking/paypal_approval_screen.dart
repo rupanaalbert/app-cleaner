@@ -1,11 +1,12 @@
 import 'package:flutter/material.dart';
-import 'package:webview_flutter/webview_flutter.dart';
+import 'package:flutter/services.dart';
+import 'package:flutter_web_auth_2/flutter_web_auth_2.dart';
 
 import '../../core/theme.dart';
 
 /// Whether the customer completed PayPal's approval (`true`) or backed out —
-/// closed the sheet, hit cancel on PayPal's side, or the redirect never
-/// arrived (`false`).
+/// closed the browser tab, hit cancel on PayPal's side, or the redirect
+/// never arrived (`false`).
 class PaypalApprovalResult {
   const PaypalApprovalResult(this.approved);
   final bool approved;
@@ -13,10 +14,14 @@ class PaypalApprovalResult {
 
 /// Hosts the PayPal approval redirect a customer completes before a booking
 /// is confirmed — the in-app replacement for what used to be Stripe's native
-/// PaymentSheet. PayPal redirects to `sparkle://booking/paypal/return`
-/// (approved) or `sparkle://booking/paypal/cancel` (backed out); this screen
-/// watches for those and pops with the result rather than letting the
-/// webview try to load a scheme it can't handle.
+/// PaymentSheet. Opens PayPal in the system browser (Chrome Custom Tabs on
+/// Android, `ASWebAuthenticationSession` on iOS) rather than an embedded
+/// WebView: an in-app WebView's Chromium renderer runs in the host app's
+/// process, so a renderer crash on lower-spec/unaccelerated devices took the
+/// whole app down with it; the system browser is a separate process, so it
+/// can't. PayPal redirects to `sparkle://booking/paypal/return` (approved)
+/// or `sparkle://booking/paypal/cancel` (backed out); this screen launches
+/// the browser and pops with the result once the OS hands the redirect back.
 class PaypalApprovalScreen extends StatefulWidget {
   const PaypalApprovalScreen({super.key, required this.approveUrl});
   final String approveUrl;
@@ -26,33 +31,33 @@ class PaypalApprovalScreen extends StatefulWidget {
 }
 
 class _PaypalApprovalScreenState extends State<PaypalApprovalScreen> {
-  late final WebViewController _controller;
-  bool _loading = true;
   String? _error;
 
   @override
   void initState() {
     super.initState();
-    _controller = WebViewController()
-      ..setJavaScriptMode(JavaScriptMode.unrestricted)
-      ..setBackgroundColor(Sparkle.linen)
-      ..setNavigationDelegate(NavigationDelegate(
-        onNavigationRequest: (request) {
-          final uri = Uri.tryParse(request.url);
-          if (uri != null && uri.scheme == 'sparkle') {
-            Navigator.of(context).pop(PaypalApprovalResult(uri.path.contains('return')));
-            return NavigationDecision.prevent;
-          }
-          return NavigationDecision.navigate;
-        },
-        onPageStarted: (_) => setState(() => _loading = true),
-        onPageFinished: (_) => setState(() => _loading = false),
-        onWebResourceError: (error) => setState(() {
-          _loading = false;
-          _error = error.description;
-        }),
-      ))
-      ..loadRequest(Uri.parse(widget.approveUrl));
+    _launch();
+  }
+
+  Future<void> _launch() async {
+    try {
+      final callback = await FlutterWebAuth2.authenticate(
+        url: widget.approveUrl,
+        callbackUrlScheme: 'sparkle',
+      );
+      if (!mounted) return;
+      final approved = Uri.parse(callback).path.contains('return');
+      Navigator.of(context).pop(PaypalApprovalResult(approved));
+    } on PlatformException catch (e) {
+      if (!mounted) return;
+      if (e.code == 'CANCELED') {
+        // User closed the browser tab/session without completing approval —
+        // the package surfaces this as an error, not a callback URL.
+        Navigator.of(context).pop(const PaypalApprovalResult(false));
+        return;
+      }
+      setState(() => _error = e.message ?? e.code);
+    }
   }
 
   @override
@@ -65,9 +70,10 @@ class _PaypalApprovalScreenState extends State<PaypalApprovalScreen> {
           onPressed: () => Navigator.of(context).pop(const PaypalApprovalResult(false)),
         ),
       ),
-      body: _error != null
-          ? Center(
-              child: Padding(
+      backgroundColor: Sparkle.linen,
+      body: Center(
+        child: _error != null
+            ? Padding(
                 padding: const EdgeInsets.all(Sparkle.s5),
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
@@ -77,14 +83,9 @@ class _PaypalApprovalScreenState extends State<PaypalApprovalScreen> {
                     Text('Could not load PayPal: $_error', textAlign: TextAlign.center),
                   ],
                 ),
-              ),
-            )
-          : Stack(
-              children: [
-                WebViewWidget(controller: _controller),
-                if (_loading) const Center(child: CircularProgressIndicator()),
-              ],
-            ),
+              )
+            : const CircularProgressIndicator(),
+      ),
     );
   }
 }
