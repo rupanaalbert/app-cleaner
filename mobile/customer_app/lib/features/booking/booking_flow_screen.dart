@@ -4,6 +4,7 @@ import 'package:intl/intl.dart';
 
 import '../../core/theme.dart';
 import '../../data/booking_repository.dart';
+import '../../l10n/sparkle_strings.dart';
 import 'booking_controller.dart';
 import 'paypal_approval_screen.dart';
 import 'steps/home_step.dart';
@@ -180,6 +181,7 @@ class _PriceLedgerState extends State<PriceLedger> {
   @override
   Widget build(BuildContext context) {
     final c = widget.c;
+    final s = SparkleStrings.of(context);
     final quote = c.quote;
     final loading = c.quoteState == QuoteState.loading;
 
@@ -214,10 +216,8 @@ class _PriceLedgerState extends State<PriceLedger> {
                       ],
                     ),
                   ),
-                if (quote.multipliers.contains('weekend'))
-                  const _Note('Weekend rate applied — 15% above weekday pricing.'),
-                if (quote.multipliers.contains('evening'))
-                  const _Note('Evening rate applied — 10% above daytime pricing.'),
+                if (quote.multipliers.contains('weekend')) _Note(s.weekendRateNote),
+                if (quote.multipliers.contains('evening')) _Note(s.eveningRateNote),
                 const Divider(color: Sparkle.hairline, height: Sparkle.s5),
               ],
               InkWell(
@@ -233,7 +233,7 @@ class _PriceLedgerState extends State<PriceLedger> {
                           Row(
                             children: [
                               Text(
-                                quote == null ? 'Estimate' : 'Total',
+                                quote == null ? s.estimate : s.total,
                                 style: Theme.of(context).textTheme.labelSmall,
                               ),
                               if (quote != null) ...[
@@ -248,7 +248,7 @@ class _PriceLedgerState extends State<PriceLedger> {
                             duration: const Duration(milliseconds: 200),
                             child: Text(
                               quote == null
-                                  ? (c.draft.hasSchedule ? '—' : 'Pick a time')
+                                  ? (c.draft.hasSchedule ? '—' : s.pickATime)
                                   : dollars(quote.totalCents),
                               key: ValueKey(quote?.totalCents ?? -1),
                               style: Theme.of(context).textTheme.displaySmall,
@@ -266,7 +266,7 @@ class _PriceLedgerState extends State<PriceLedger> {
                           ),
                         )
                       else if (quote != null)
-                        Text('${_hours(quote.durationMin)} · all in',
+                        Text(s.allIn(s.hoursShort(quote.durationMin)),
                             style: const TextStyle(fontSize: 13, color: Sparkle.inkSoft)),
                     ],
                   ),
@@ -279,9 +279,9 @@ class _PriceLedgerState extends State<PriceLedger> {
                         height: 20, width: 20,
                         child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
                     : Text(switch (c.step) {
-                        BookingStep.review => 'Confirm and book',
-                        BookingStep.schedule => 'Review booking',
-                        _ => 'Continue',
+                        BookingStep.review => s.confirmAndBook,
+                        BookingStep.schedule => s.reviewBooking,
+                        _ => s.continueLabel,
                       }),
               ),
             ],
@@ -289,12 +289,6 @@ class _PriceLedgerState extends State<PriceLedger> {
         ),
       ),
     );
-  }
-
-  String _hours(int minutes) {
-    final h = minutes ~/ 60, m = minutes % 60;
-    if (h == 0) return '${m}m';
-    return m == 0 ? '${h}h' : '${h}h ${m}m';
   }
 }
 
@@ -326,7 +320,9 @@ class _ConfirmedSheet extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final when = DateFormat('EEEE d MMMM · h:mm a').format(booking.scheduledAt);
+    final s = SparkleStrings.of(context);
+    final locale = Localizations.localeOf(context).toString();
+    final when = DateFormat('EEEE d MMMM · h:mm a', locale).format(booking.scheduledAt);
     return Padding(
       padding: const EdgeInsets.all(Sparkle.s5),
       child: Column(
@@ -341,20 +337,19 @@ class _ConfirmedSheet extends StatelessWidget {
             child: SvgPicture.asset('assets/images/sparkle_motif.svg', width: 64, height: 64),
           ),
           const SizedBox(height: Sparkle.s3),
-          Text('Booked for $when', style: Theme.of(context).textTheme.titleLarge),
+          Text(s.bookedFor(when), style: Theme.of(context).textTheme.titleLarge),
           const SizedBox(height: Sparkle.s2),
           Text(
-            'We\'re finding your cleaner now — usually within a few minutes. '
-            'Your card is on hold for ${dollars(booking.totalCents)} and is only charged once the clean is done.',
+            s.findingCleanerBody(dollars(booking.totalCents)),
             style: Theme.of(context).textTheme.bodyMedium,
           ),
           const SizedBox(height: Sparkle.s3),
-          Text('Reference ${booking.reference}',
+          Text(s.referenceLabel(booking.reference),
               style: Theme.of(context).textTheme.labelSmall),
           const SizedBox(height: Sparkle.s5),
           FilledButton(
             onPressed: () => Navigator.pop(context),
-            child: const Text('View booking'),
+            child: Text(s.viewBooking),
           ),
         ],
       ),

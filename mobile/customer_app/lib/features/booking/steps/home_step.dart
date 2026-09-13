@@ -3,6 +3,7 @@ import 'package:flutter/services.dart';
 
 import '../../../core/theme.dart';
 import '../../../core/widgets/sparkle_card.dart';
+import '../../../l10n/sparkle_strings.dart';
 import '../booking_controller.dart';
 import '../widgets/hero_banner.dart';
 
@@ -12,20 +13,20 @@ class HomeStep extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final s = SparkleStrings.of(context);
     return ListView(
       padding: const EdgeInsets.fromLTRB(Sparkle.s4, Sparkle.s4, Sparkle.s4, Sparkle.s6),
       children: [
         const HeroBanner(imageAsset: 'assets/images/hero_tidy_home.svg'),
-        Text('Tell us about your home', style: Theme.of(context).textTheme.titleLarge),
+        Text(s.tellUsAboutHome, style: Theme.of(context).textTheme.titleLarge),
         const SizedBox(height: Sparkle.s1),
-        const Text('Room count sets the price and the time we book for your cleaner.',
-            style: TextStyle(color: Sparkle.inkSoft, fontSize: 13)),
+        Text(s.roomCountSub, style: const TextStyle(color: Sparkle.inkSoft, fontSize: 13)),
         const SizedBox(height: Sparkle.s5),
         _SectionCard(
           child: Column(
             children: [
               _Stepper(
-                label: 'Bedrooms',
+                label: s.bedrooms,
                 value: c.draft.bedrooms,
                 min: 1,
                 max: 8,
@@ -33,7 +34,7 @@ class HomeStep extends StatelessWidget {
               ),
               const Divider(height: Sparkle.s6, color: Sparkle.hairline),
               _Stepper(
-                label: 'Bathrooms',
+                label: s.bathrooms,
                 value: c.draft.bathrooms,
                 min: 1,
                 max: 6,
@@ -43,18 +44,17 @@ class HomeStep extends StatelessWidget {
           ),
         ),
         const SizedBox(height: Sparkle.s5),
-        Text('Square footage', style: Theme.of(context).textTheme.titleMedium),
+        Text(s.squareFootage, style: Theme.of(context).textTheme.titleMedium),
         const SizedBox(height: Sparkle.s1),
-        const Text('Optional. A rough number is fine — it only adjusts larger homes.',
-            style: TextStyle(color: Sparkle.inkSoft, fontSize: 13)),
+        Text(s.squareFootageSub, style: const TextStyle(color: Sparkle.inkSoft, fontSize: 13)),
         const SizedBox(height: Sparkle.s3),
         TextField(
           keyboardType: TextInputType.number,
           inputFormatters: [FilteringTextInputFormatter.digitsOnly, LengthLimitingTextInputFormatter(5)],
           onChanged: (v) => c.setRooms(squareFeet: int.tryParse(v)),
           decoration: InputDecoration(
-            hintText: 'e.g. 1600',
-            suffixText: 'sq ft',
+            hintText: s.squareFootageHint,
+            suffixText: s.sqFt,
             filled: true,
             fillColor: Sparkle.surface,
             border: OutlineInputBorder(
@@ -99,6 +99,7 @@ class _Stepper extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final s = SparkleStrings.of(context);
     return Row(
       children: [
         Expanded(child: Text(label, style: Theme.of(context).textTheme.titleMedium)),
@@ -107,7 +108,7 @@ class _Stepper extends StatelessWidget {
           // Disabled rather than hidden: the control keeps its position, so
           // repeated taps never land on the wrong button.
           onTap: value > min ? () => onChanged(value - 1) : null,
-          semanticLabel: 'Fewer $label',
+          semanticLabel: s.fewer(label),
         ),
         SizedBox(
           width: 56,
@@ -123,7 +124,7 @@ class _Stepper extends StatelessWidget {
         _Round(
           icon: Icons.add,
           onTap: value < max ? () => onChanged(value + 1) : null,
-          semanticLabel: 'More $label',
+          semanticLabel: s.more(label),
         ),
       ],
     );

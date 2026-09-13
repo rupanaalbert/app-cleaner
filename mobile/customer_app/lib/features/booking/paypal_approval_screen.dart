@@ -3,6 +3,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_web_auth_2/flutter_web_auth_2.dart';
 
 import '../../core/theme.dart';
+import '../../l10n/sparkle_strings.dart';
 
 /// Whether the customer completed PayPal's approval (`true`) or backed out —
 /// closed the browser tab, hit cancel on PayPal's side, or the redirect
@@ -62,9 +63,10 @@ class _PaypalApprovalScreenState extends State<PaypalApprovalScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final s = SparkleStrings.of(context);
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Approve with PayPal'),
+        title: Text(s.approveWithPaypal),
         leading: IconButton(
           icon: const Icon(Icons.close),
           onPressed: () => Navigator.of(context).pop(const PaypalApprovalResult(false)),
@@ -80,7 +82,7 @@ class _PaypalApprovalScreenState extends State<PaypalApprovalScreen> {
                   children: [
                     const Icon(Icons.error_outline, color: Sparkle.clay, size: 32),
                     const SizedBox(height: Sparkle.s3),
-                    Text('Could not load PayPal: $_error', textAlign: TextAlign.center),
+                    Text(s.couldNotLoadPaypal(_error!), textAlign: TextAlign.center),
                   ],
                 ),
               )

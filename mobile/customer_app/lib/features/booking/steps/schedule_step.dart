@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 
 import '../../../core/theme.dart';
+import '../../../l10n/sparkle_strings.dart';
 import '../booking_controller.dart';
 
 /// Scheduling.
@@ -54,6 +55,8 @@ class _ScheduleStepState extends State<ScheduleStep> {
   @override
   Widget build(BuildContext context) {
     final c = widget.c;
+    final s = SparkleStrings.of(context);
+    final locale = Localizations.localeOf(context).toString();
     final selected = c.draft.scheduledAt;
     final slots = _slots;
 
@@ -62,13 +65,12 @@ class _ScheduleStepState extends State<ScheduleStep> {
       children: [
         Padding(
           padding: const EdgeInsets.symmetric(horizontal: Sparkle.s4),
-          child: Text('When works for you?', style: Theme.of(context).textTheme.titleLarge),
+          child: Text(s.whenWorksForYou, style: Theme.of(context).textTheme.titleLarge),
         ),
         const SizedBox(height: Sparkle.s1),
-        const Padding(
-          padding: EdgeInsets.symmetric(horizontal: Sparkle.s4),
-          child: Text('Book at least 2 hours ahead. Weekends cost a little more.',
-              style: TextStyle(color: Sparkle.inkSoft, fontSize: 13)),
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: Sparkle.s4),
+          child: Text(s.scheduleSub, style: const TextStyle(color: Sparkle.inkSoft, fontSize: 13)),
         ),
         const SizedBox(height: Sparkle.s4),
         SizedBox(
@@ -85,6 +87,7 @@ class _ScheduleStepState extends State<ScheduleStep> {
                 day: day,
                 selected: isSelected,
                 weekend: _isWeekend(day),
+                locale: locale,
                 onTap: () => setState(() => _selectedDay = day),
               );
             },
@@ -93,15 +96,14 @@ class _ScheduleStepState extends State<ScheduleStep> {
         const SizedBox(height: Sparkle.s5),
         Padding(
           padding: const EdgeInsets.symmetric(horizontal: Sparkle.s4),
-          child: Text(DateFormat('EEEE d MMMM').format(_selectedDay),
+          child: Text(DateFormat('EEEE d MMMM', locale).format(_selectedDay),
               style: Theme.of(context).textTheme.titleMedium),
         ),
         const SizedBox(height: Sparkle.s3),
         if (slots.isEmpty)
-          const Padding(
-            padding: EdgeInsets.symmetric(horizontal: Sparkle.s4),
-            child: Text('No times left today. Try tomorrow.',
-                style: TextStyle(color: Sparkle.inkSoft)),
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: Sparkle.s4),
+            child: Text(s.noTimesLeft, style: const TextStyle(color: Sparkle.inkSoft)),
           )
         else
           Padding(
@@ -112,7 +114,7 @@ class _ScheduleStepState extends State<ScheduleStep> {
               children: [
                 for (final slot in slots)
                   _SlotChip(
-                    label: DateFormat('h:mm a').format(slot),
+                    label: DateFormat('h:mm a', locale).format(slot),
                     evening: slot.hour >= 17,
                     selected: selected == slot,
                     onTap: () => c.setSchedule(slot),
@@ -123,7 +125,7 @@ class _ScheduleStepState extends State<ScheduleStep> {
         const SizedBox(height: Sparkle.s5),
         Padding(
           padding: const EdgeInsets.symmetric(horizontal: Sparkle.s4),
-          child: Text('How do we get in?', style: Theme.of(context).textTheme.titleMedium),
+          child: Text(s.howDoWeGetIn, style: Theme.of(context).textTheme.titleMedium),
         ),
         const SizedBox(height: Sparkle.s2),
         RadioGroup<String>(
@@ -131,11 +133,11 @@ class _ScheduleStepState extends State<ScheduleStep> {
           onChanged: (v) => c.setEntryMethod(v!),
           child: Column(
             children: [
-              for (final entry in const {
-                'home': 'I\'ll be home',
-                'doorman': 'Doorman or front desk',
-                'lockbox': 'Lockbox or keypad',
-                'hidden_key': 'Key is hidden on site',
+              for (final entry in {
+                'home': s.entryHome,
+                'doorman': s.entryDoorman,
+                'lockbox': s.entryLockbox,
+                'hidden_key': s.entryHiddenKey,
               }.entries)
                 RadioListTile<String>(
                   value: entry.key,
@@ -156,12 +158,14 @@ class _DayCell extends StatelessWidget {
     required this.day,
     required this.selected,
     required this.weekend,
+    required this.locale,
     required this.onTap,
   });
 
   final DateTime day;
   final bool selected;
   final bool weekend;
+  final String locale;
   final VoidCallback onTap;
 
   @override
@@ -182,7 +186,7 @@ class _DayCell extends StatelessWidget {
           mainAxisSize: MainAxisSize.min,
           children: [
             Text(
-              DateFormat('EEE').format(day).toUpperCase(),
+              DateFormat('EEE', locale).format(day).toUpperCase(),
               style: TextStyle(
                 fontSize: 10, fontWeight: FontWeight.w700, letterSpacing: 0.8,
                 color: selected ? Sparkle.mutedOnMarine : Sparkle.inkSoft,
@@ -190,7 +194,7 @@ class _DayCell extends StatelessWidget {
             ),
             const SizedBox(height: Sparkle.s1),
             Text(
-              DateFormat('d').format(day),
+              DateFormat('d', locale).format(day),
               style: TextStyle(
                 fontFamily: 'Manrope', fontSize: 20, fontWeight: FontWeight.w600,
                 color: selected ? Colors.white : Sparkle.inkStrong,

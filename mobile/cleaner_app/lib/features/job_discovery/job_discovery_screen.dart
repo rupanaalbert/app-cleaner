@@ -7,6 +7,7 @@ import 'package:intl/intl.dart';
 
 import '../../core/theme.dart';
 import '../../data/offers_repository.dart';
+import '../../l10n/sparkle_strings.dart';
 
 /// Job Discovery — the cleaner's home screen.
 ///
@@ -33,7 +34,6 @@ class JobDiscoveryScreen extends StatefulWidget {
 
 class _JobDiscoveryScreenState extends State<JobDiscoveryScreen> {
   final _money = NumberFormat.currency(symbol: r'$', decimalDigits: 2);
-  final _time = DateFormat('EEE d MMM · h:mm a');
 
   List<JobOffer> _offers = const [];
   bool _loading = true;
@@ -71,15 +71,17 @@ class _JobDiscoveryScreenState extends State<JobDiscoveryScreen> {
       });
     } catch (e) {
       if (!mounted) return;
+      final s = SparkleStrings.of(context);
       setState(() {
         _loading = false;
-        _error = e is ApiFailure ? e.message : 'Could not load jobs. Pull down to retry.';
+        _error = e is ApiFailure ? e.message : s.couldNotLoadJobs;
       });
     }
   }
 
   Future<void> _accept(JobOffer offer) async {
     setState(() => _accepting = offer.offerId);
+    final s = SparkleStrings.of(context);
     try {
       await widget.repository.accept(offer.offerId);
       if (!mounted) return;
@@ -88,11 +90,11 @@ class _JobDiscoveryScreenState extends State<JobDiscoveryScreen> {
         _accepting = null;
       });
       widget.onOfferAccepted?.call(offer);
-      _say('Job accepted. The address is in your schedule.', tone: Sparkle.seafoam);
+      _say(s.jobAccepted, tone: Sparkle.seafoam);
     } on OfferTaken {
-      _drop(offer, 'Another cleaner took this one.');
+      _drop(offer, s.offerTaken);
     } on OfferExpired {
-      _drop(offer, 'That offer expired.');
+      _drop(offer, s.offerExpired);
     } catch (e) {
       if (!mounted) return;
       setState(() => _accepting = null);
@@ -142,6 +144,7 @@ class _JobDiscoveryScreenState extends State<JobDiscoveryScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final time = DateFormat('EEE d MMM · h:mm a', Localizations.localeOf(context).toString());
     return Scaffold(
       body: RefreshIndicator(
         onRefresh: _load,
@@ -173,7 +176,7 @@ class _JobDiscoveryScreenState extends State<JobDiscoveryScreen> {
                     child: _OfferCard(
                       offer: offer,
                       money: _money,
-                      time: _time,
+                      time: time,
                       busy: _accepting == offer.offerId,
                       onAccept: () => _accept(offer),
                       onDecline: () => _decline(offer),
@@ -188,6 +191,7 @@ class _JobDiscoveryScreenState extends State<JobDiscoveryScreen> {
   }
 
   Widget _header() {
+    final s = SparkleStrings.of(context);
     return SliverAppBar(
       pinned: true,
       expandedHeight: 144,
@@ -199,7 +203,7 @@ class _JobDiscoveryScreenState extends State<JobDiscoveryScreen> {
           mainAxisSize: MainAxisSize.min,
           children: [
             Text(
-              _offers.isEmpty ? 'Jobs near you' : '${_offers.length} jobs near you',
+              s.jobsNearYou(_offers.length),
               style: const TextStyle(fontFamily: 'Manrope', fontSize: 18, fontWeight: FontWeight.w600),
             ),
           ],
@@ -214,11 +218,11 @@ class _JobDiscoveryScreenState extends State<JobDiscoveryScreen> {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    Text(_online ? 'Accepting jobs' : 'Not accepting jobs',
+                    Text(_online ? s.acceptingJobs : s.notAcceptingJobs,
                         style: const TextStyle(color: Colors.white, fontSize: 15, fontWeight: FontWeight.w600)),
                     const SizedBox(height: 2),
                     Text(
-                      _online ? 'We\'ll notify you when work comes in' : 'Turn on to start receiving offers',
+                      _online ? s.acceptingJobsSub : s.notAcceptingJobsSub,
                       style: const TextStyle(color: Sparkle.mutedOnMarine, fontSize: 13),
                       overflow: TextOverflow.ellipsis,
                     ),
@@ -260,6 +264,7 @@ class _OfferCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final s = SparkleStrings.of(context);
     final seconds = math.max(0, offer.remaining.inSeconds);
     final urgent = seconds <= 20;
 
@@ -292,7 +297,7 @@ class _OfferCard extends StatelessWidget {
                       money.format(offer.payoutCents / 100),
                       style: Theme.of(context).textTheme.displaySmall?.copyWith(color: Sparkle.payout),
                     ),
-                    Text('${money.format(offer.hourlyCents / 100)}/hr',
+                    Text(s.perHour(money.format(offer.hourlyCents / 100)),
                         style: const TextStyle(fontSize: 12, color: Sparkle.inkSoft)),
                   ],
                 ),
@@ -306,8 +311,8 @@ class _OfferCard extends StatelessWidget {
                       spacing: Sparkle.s1,
                       runSpacing: Sparkle.s1,
                       children: [
-                        if (offer.isDeepClean) const _Chip(label: 'DEEP CLEAN', tone: Sparkle.marine),
-                        if (offer.hasPets) const _Chip(label: 'PETS', tone: Sparkle.inkSoft),
+                        if (offer.isDeepClean) _Chip(label: s.deepCleanChip, tone: Sparkle.marine),
+                        if (offer.hasPets) _Chip(label: s.petsChip, tone: Sparkle.inkSoft),
                       ],
                     ),
                     const SizedBox(height: Sparkle.s2),
@@ -315,13 +320,12 @@ class _OfferCard extends StatelessWidget {
                         style: Theme.of(context).textTheme.titleMedium),
                     const SizedBox(height: 2),
                     Text(
-                      '${offer.bedrooms} bed · ${offer.bathrooms} bath'
-                      '${offer.squareFeet != null ? ' · ${offer.squareFeet} sq ft' : ''}',
+                      s.bedBathSummary(offer.bedrooms, offer.bathrooms, offer.squareFeet),
                       style: Theme.of(context).textTheme.bodyMedium,
                     ),
                     const SizedBox(height: 2),
                     Text(
-                      '${offer.distanceKm.toStringAsFixed(1)} km · ${offer.neighborhood}',
+                      s.distanceNeighborhood(offer.distanceKm.toStringAsFixed(1), offer.neighborhood),
                       style: Theme.of(context).textTheme.bodyMedium,
                     ),
                   ],
@@ -332,11 +336,11 @@ class _OfferCard extends StatelessWidget {
           const SizedBox(height: Sparkle.s3),
           Row(
             children: [
-              Text('${_hours(offer.durationMin)} on site',
+              Text(s.onSite(s.hoursShort(offer.durationMin)),
                   style: Theme.of(context).textTheme.labelSmall),
               const Spacer(),
               Text(
-                urgent ? 'Closing in ${seconds}s' : 'Open for ${seconds}s',
+                urgent ? s.closingIn(seconds) : s.openFor(seconds),
                 style: TextStyle(
                   fontSize: 12,
                   fontWeight: FontWeight.w600,
@@ -358,7 +362,7 @@ class _OfferCard extends StatelessWidget {
                     foregroundColor: Sparkle.ink,
                     shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
                   ),
-                  child: const Text('Pass'),
+                  child: Text(s.pass),
                 ),
               ),
               const SizedBox(width: Sparkle.s3),
@@ -371,7 +375,7 @@ class _OfferCard extends StatelessWidget {
                           height: 20, width: 20,
                           child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
                         )
-                      : const Text('Accept job'),
+                      : Text(s.acceptJob),
                 ),
               ),
             ],
@@ -379,13 +383,6 @@ class _OfferCard extends StatelessWidget {
         ],
       ),
     );
-  }
-
-  String _hours(int minutes) {
-    final h = minutes ~/ 60;
-    final m = minutes % 60;
-    if (h == 0) return '${m}m';
-    return m == 0 ? '${h}h' : '${h}h ${m}m';
   }
 }
 
@@ -406,7 +403,7 @@ class _ExpiryRing extends StatelessWidget {
   Widget build(BuildContext context) {
     final progress = (secondsLeft / totalSeconds).clamp(0.0, 1.0);
     return Semantics(
-      label: '$secondsLeft seconds left to accept',
+      label: SparkleStrings.of(context).secondsLeftToAccept(secondsLeft),
       child: SizedBox(
         width: 108,
         height: 108,
@@ -461,15 +458,15 @@ class _Chip extends StatelessWidget {
 class _DeclineSheet extends StatelessWidget {
   const _DeclineSheet();
 
-  static const _reasons = {
-    'too_far': 'Too far away',
-    'bad_timing': 'Doesn\'t fit my schedule',
-    'low_pay': 'Pay is too low',
-    'other': 'Another reason',
-  };
-
   @override
   Widget build(BuildContext context) {
+    final s = SparkleStrings.of(context);
+    final reasons = {
+      'too_far': s.reasonTooFar,
+      'bad_timing': s.reasonBadTiming,
+      'low_pay': s.reasonLowPay,
+      'other': s.reasonOther,
+    };
     return SafeArea(
       child: Padding(
         padding: const EdgeInsets.all(Sparkle.s4),
@@ -477,14 +474,14 @@ class _DeclineSheet extends StatelessWidget {
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text('Why are you passing?', style: Theme.of(context).textTheme.titleLarge),
+            Text(s.whyPassing, style: Theme.of(context).textTheme.titleLarge),
             const SizedBox(height: Sparkle.s1),
-            const Text(
-              'This tunes which jobs we send you. Passing never affects your rating.',
-              style: TextStyle(color: Sparkle.inkSoft, fontSize: 13),
+            Text(
+              s.whyPassingSub,
+              style: const TextStyle(color: Sparkle.inkSoft, fontSize: 13),
             ),
             const SizedBox(height: Sparkle.s3),
-            for (final entry in _reasons.entries)
+            for (final entry in reasons.entries)
               ListTile(
                 contentPadding: EdgeInsets.zero,
                 title: Text(entry.value),
@@ -504,6 +501,7 @@ class _EmptyState extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final s = SparkleStrings.of(context);
     return Padding(
       padding: const EdgeInsets.all(Sparkle.s6),
       child: Column(
@@ -511,13 +509,11 @@ class _EmptyState extends StatelessWidget {
         children: [
           SvgPicture.asset('assets/images/illustration_empty_calm.svg', width: 96, height: 96),
           const SizedBox(height: Sparkle.s4),
-          Text(online ? 'No open jobs right now' : 'You\'re not accepting jobs',
+          Text(online ? s.emptyNoJobsTitle : s.emptyNotAcceptingTitle,
               style: Theme.of(context).textTheme.titleLarge, textAlign: TextAlign.center),
           const SizedBox(height: Sparkle.s2),
           Text(
-            online
-                ? 'Keep the app open — new jobs arrive as a notification, and weekend mornings are busiest.'
-                : 'Turn on Accepting jobs at the top to start receiving offers.',
+            online ? s.emptyNoJobsBody : s.emptyNotAcceptingBody,
             textAlign: TextAlign.center,
             style: Theme.of(context).textTheme.bodyMedium,
           ),
@@ -543,7 +539,7 @@ class _ErrorState extends StatelessWidget {
           const SizedBox(height: Sparkle.s4),
           Text(message, textAlign: TextAlign.center, style: Theme.of(context).textTheme.bodyMedium),
           const SizedBox(height: Sparkle.s4),
-          FilledButton(onPressed: onRetry, child: const Text('Try again')),
+          FilledButton(onPressed: onRetry, child: Text(SparkleStrings.of(context).tryAgain)),
         ],
       ),
     );

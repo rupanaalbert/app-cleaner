@@ -7,6 +7,7 @@ import 'package:intl/intl.dart';
 import '../../../core/theme.dart';
 import '../../../core/widgets/sparkle_card.dart';
 import '../../../data/booking_repository.dart';
+import '../../../l10n/sparkle_strings.dart';
 import '../booking_controller.dart';
 import '../booking_flow_screen.dart' show dollars;
 
@@ -50,54 +51,52 @@ class _ReviewStepState extends State<ReviewStep> {
   @override
   Widget build(BuildContext context) {
     final c = widget.c;
+    final s = SparkleStrings.of(context);
+    final locale = Localizations.localeOf(context).toString();
     final quote = c.quote;
-    final service = ServiceOption.catalog.firstWhere((s) => s.code == c.draft.serviceCode);
+    final service = ServiceOption.catalog.firstWhere((sv) => sv.code == c.draft.serviceCode);
 
     return ListView(
       padding: const EdgeInsets.fromLTRB(Sparkle.s4, Sparkle.s4, Sparkle.s4, Sparkle.s6),
       children: [
-        Text('Almost done', style: Theme.of(context).textTheme.titleLarge),
+        Text(s.almostDone, style: Theme.of(context).textTheme.titleLarge),
         const SizedBox(height: Sparkle.s4),
         _Card(children: [
           _Row(
-            label: 'Service',
-            value: service.name,
+            label: s.rowService,
+            value: s.serviceName(service.code),
             onEdit: () => _jump(BookingStep.service),
           ),
           _Row(
-            label: 'Home',
-            value: '${c.draft.bedrooms} bed · ${c.draft.bathrooms} bath'
-                '${c.draft.squareFeet != null ? ' · ${c.draft.squareFeet} sq ft' : ''}',
+            label: s.rowHome,
+            value: s.homeSummary(c.draft.bedrooms, c.draft.bathrooms, c.draft.squareFeet),
             onEdit: () => _jump(BookingStep.home),
           ),
           _Row(
-            label: 'When',
+            label: s.rowWhen,
             value: c.draft.scheduledAt == null
                 ? '—'
-                : DateFormat('EEE d MMM · h:mm a').format(c.draft.scheduledAt!),
+                : DateFormat('EEE d MMM · h:mm a', locale).format(c.draft.scheduledAt!),
             onEdit: () => _jump(BookingStep.schedule),
           ),
           if (quote != null)
-            _Row(label: 'Expected time on site', value: _hours(quote.durationMin)),
+            _Row(label: s.rowExpectedTime, value: s.hoursLong(quote.durationMin)),
           if (c.draft.addonCodes.isNotEmpty)
             _Row(
-              label: 'Extras',
-              value: c.draft.addonCodes
-                  .map((code) => AddonOption.catalog.firstWhere((a) => a.code == code).name)
-                  .join(', '),
+              label: s.rowExtras,
+              value: c.draft.addonCodes.map(s.addonName).join(', '),
               onEdit: () => _jump(BookingStep.service),
             ),
         ]),
         const SizedBox(height: Sparkle.s4),
-        Text('Anything your cleaner should know?',
-            style: Theme.of(context).textTheme.titleMedium),
+        Text(s.anythingCleanerShouldKnow, style: Theme.of(context).textTheme.titleMedium),
         const SizedBox(height: Sparkle.s2),
         TextField(
           maxLines: 3,
           maxLength: 500,
           onChanged: c.setInstructions,
           decoration: InputDecoration(
-            hintText: 'Gate code, where supplies live, a room to skip, a nervous cat…',
+            hintText: s.instructionsHint,
             filled: true,
             fillColor: Sparkle.surface,
             border: OutlineInputBorder(
@@ -113,16 +112,13 @@ class _ReviewStepState extends State<ReviewStep> {
         const SizedBox(height: Sparkle.s2),
         _Reassurance(
           leading: SvgPicture.asset('assets/images/icon_card_hold.svg', width: 18, height: 18),
-          title: 'Held now, charged after',
-          body: quote == null
-              ? 'We place a hold on your card and only charge once the clean is finished.'
-              : 'We hold ${dollars(quote.totalCents)} on your card now and charge it once the clean is finished. '
-                  'Cancel more than 12 hours ahead and the hold is released in full.',
+          title: s.heldNowChargedAfter,
+          body: quote == null ? s.heldNowBodyNoQuote : s.heldNowBody(dollars(quote.totalCents)),
         ),
-        const _Reassurance(
-          leading: _ShieldCheckIcon(),
-          title: 'Every cleaner is background checked',
-          body: 'Identity and criminal record checks are re-run yearly. Your address is only shared once a cleaner accepts.',
+        _Reassurance(
+          leading: const _ShieldCheckIcon(),
+          title: s.backgroundCheckedTitle,
+          body: s.backgroundCheckedBody,
         ),
         if (quote != null) _Freshness(quote: quote, reloading: c.quoteState == QuoteState.loading),
         if (c.quoteError != null)
@@ -139,12 +135,6 @@ class _ReviewStepState extends State<ReviewStep> {
       widget.c.back();
     }
   }
-
-  String _hours(int minutes) {
-    final h = minutes ~/ 60, m = minutes % 60;
-    if (h == 0) return '$m minutes';
-    return m == 0 ? '$h hours' : '${h}h ${m}m';
-  }
 }
 
 class _Freshness extends StatelessWidget {
@@ -154,12 +144,14 @@ class _Freshness extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final s = SparkleStrings.of(context);
     final left = quote.timeLeft;
     final text = reloading
-        ? 'Refreshing your price…'
+        ? s.refreshingPrice
         : left.isNegative
-            ? 'Price expired — refreshing.'
-            : 'This price holds for ${left.inMinutes}:${(left.inSeconds % 60).toString().padLeft(2, '0')}.';
+            ? s.priceExpired
+            : s.priceHolds(
+                '${left.inMinutes}:${(left.inSeconds % 60).toString().padLeft(2, '0')}');
 
     return Padding(
       padding: const EdgeInsets.only(top: Sparkle.s4),
@@ -213,7 +205,7 @@ class _Row extends StatelessWidget {
                 minimumSize: const Size(44, 44),
                 padding: EdgeInsets.zero,
               ),
-              child: const Text('Change'),
+              child: Text(SparkleStrings.of(context).change),
             ),
         ],
       ),

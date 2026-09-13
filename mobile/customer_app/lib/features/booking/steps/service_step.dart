@@ -3,6 +3,7 @@ import 'package:flutter_svg/flutter_svg.dart';
 
 import '../../../core/theme.dart';
 import '../../../data/booking_repository.dart';
+import '../../../l10n/sparkle_strings.dart';
 import '../booking_controller.dart';
 import '../booking_flow_screen.dart' show dollars;
 import '../widgets/hero_banner.dart';
@@ -13,11 +14,12 @@ class ServiceStep extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final s = SparkleStrings.of(context);
     return ListView(
       padding: const EdgeInsets.fromLTRB(Sparkle.s4, Sparkle.s4, Sparkle.s4, Sparkle.s6),
       children: [
         const HeroBanner(imageAsset: 'assets/images/hero_tidy_home.svg'),
-        Text('What kind of clean?', style: Theme.of(context).textTheme.titleLarge),
+        Text(s.whatKindOfClean, style: Theme.of(context).textTheme.titleLarge),
         const SizedBox(height: Sparkle.s4),
         for (final service in ServiceOption.catalog)
           Padding(
@@ -25,19 +27,18 @@ class ServiceStep extends StatelessWidget {
             child: _SelectCard(
               selected: c.draft.serviceCode == service.code,
               onTap: () => c.setService(service.code),
-              title: service.name,
-              eyebrow: service.pitch,
-              body: service.detail,
+              title: s.serviceName(service.code),
+              eyebrow: s.servicePitch(service.code),
+              body: s.serviceDetail(service.code),
               imageAsset: service.code == 'standard'
                   ? 'assets/images/icon_standard_clean.svg'
                   : 'assets/images/icon_deep_clean.svg',
             ),
           ),
         const SizedBox(height: Sparkle.s4),
-        Text('Add anything?', style: Theme.of(context).textTheme.titleLarge),
+        Text(s.addAnything, style: Theme.of(context).textTheme.titleLarge),
         const SizedBox(height: Sparkle.s1),
-        const Text('Optional extras, priced individually.',
-            style: TextStyle(color: Sparkle.inkSoft, fontSize: 13)),
+        Text(s.addAnythingSub, style: const TextStyle(color: Sparkle.inkSoft, fontSize: 13)),
         const SizedBox(height: Sparkle.s3),
         Wrap(
           spacing: Sparkle.s2,
@@ -45,7 +46,7 @@ class ServiceStep extends StatelessWidget {
           children: [
             for (final addon in AddonOption.catalog)
               _AddonChip(
-                label: '${addon.name}  ${dollars(addon.priceCents)}',
+                label: '${s.addonName(addon.code)}  ${dollars(addon.priceCents)}',
                 selected: c.draft.addonCodes.contains(addon.code),
                 onTap: () => c.toggleAddon(addon.code),
               ),

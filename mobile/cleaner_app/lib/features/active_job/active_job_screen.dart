@@ -8,6 +8,7 @@ import '../../data/chat_repository.dart';
 import '../../data/geolocation.dart';
 import '../../data/jobs_repository.dart';
 import '../../data/location_publisher.dart';
+import '../../l10n/sparkle_strings.dart';
 import '../chat/chat_screen.dart';
 
 /// The one job the cleaner is doing right now.
@@ -48,7 +49,6 @@ class _ActiveJobScreenState extends State<ActiveJobScreen> {
   static const _requiredAfterPhotos = 3;
 
   final _money = NumberFormat.currency(symbol: r'$', decimalDigits: 2);
-  final _time = DateFormat('EEE d MMM · h:mm a');
 
   JobDetail? _job;
   bool _loading = true;
@@ -79,7 +79,7 @@ class _ActiveJobScreenState extends State<ActiveJobScreen> {
       if (!mounted) return;
       setState(() {
         _loading = false;
-        _error = e is ApiFailure ? e.message : 'Could not load the job. Pull down to retry.';
+        _error = e is ApiFailure ? e.message : SparkleStrings.of(context).couldNotLoadJob;
       });
     }
   }
@@ -87,13 +87,13 @@ class _ActiveJobScreenState extends State<ActiveJobScreen> {
   _Step? get _next {
     switch (_job?.status) {
       case 'assigned':
-        return const _Step('en_route', 'I\'m on my way', needsLocation: false);
+        return const _Step('en_route', needsLocation: false);
       case 'en_route':
-        return const _Step('arrived', 'I\'ve arrived', needsLocation: true);
+        return const _Step('arrived', needsLocation: true);
       case 'arrived':
-        return const _Step('in_progress', 'Start cleaning', needsLocation: false);
+        return const _Step('in_progress', needsLocation: false);
       case 'in_progress':
-        return const _Step('completed', 'Finish job', needsLocation: true);
+        return const _Step('completed', needsLocation: true);
       default:
         return null;
     }
@@ -106,7 +106,7 @@ class _ActiveJobScreenState extends State<ActiveJobScreen> {
     // Mirror the server gate so the cleaner is told to shoot photos before the
     // request is spent, not after a 422.
     if (step.status == 'completed' && _photosOutstanding) {
-      _say('Add at least $_requiredAfterPhotos after-photos before finishing.', Sparkle.clay);
+      _say(SparkleStrings.of(context).needAfterPhotos(_requiredAfterPhotos), Sparkle.clay);
       return;
     }
 
@@ -123,7 +123,7 @@ class _ActiveJobScreenState extends State<ActiveJobScreen> {
       if (step.status == 'arrived') await widget.tracker?.stop();
 
       if (step.status == 'completed') {
-        _say('Job complete. Your payout is on its way.', Sparkle.seafoam);
+        _say(SparkleStrings.of(context).jobCompletePayout, Sparkle.seafoam);
       }
       await _load();
     } on LocationUnavailable catch (e) {
@@ -159,7 +159,7 @@ class _ActiveJobScreenState extends State<ActiveJobScreen> {
       if (!mounted) return;
       setState(() => _afterPhotos += 1);
     } catch (e) {
-      _say('Could not add that photo. $e', Sparkle.clay);
+      _say(SparkleStrings.of(context).couldNotAddPhoto('$e'), Sparkle.clay);
     } finally {
       if (mounted) setState(() => _uploadingPhoto = false);
     }
@@ -178,20 +178,21 @@ class _ActiveJobScreenState extends State<ActiveJobScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final s = SparkleStrings.of(context);
     final job = _job;
     return Scaffold(
       appBar: AppBar(
-        title: Text(job?.reference ?? 'Job'),
+        title: Text(job?.reference ?? s.jobFallbackTitle),
         actions: [
           if (widget.chat != null)
             IconButton(
-              tooltip: 'Message customer',
+              tooltip: s.messageCustomer,
               icon: const Icon(Icons.chat_bubble_outline),
               onPressed: () => Navigator.of(context).push(MaterialPageRoute(
                 builder: (_) => ChatScreen(
                   repository: widget.chat!,
                   bookingId: widget.bookingId,
-                  title: 'Customer',
+                  title: s.customerTitle,
                 ),
               )),
             ),
@@ -210,6 +211,8 @@ class _ActiveJobScreenState extends State<ActiveJobScreen> {
   }
 
   Widget _body(JobDetail job) {
+    final s = SparkleStrings.of(context);
+    final time = DateFormat('EEE d MMM · h:mm a', Localizations.localeOf(context).toString());
     return RefreshIndicator(
       onRefresh: _load,
       color: Sparkle.marine,
@@ -228,14 +231,14 @@ class _ActiveJobScreenState extends State<ActiveJobScreen> {
                   children: [
                     Text(job.serviceName, style: Theme.of(context).textTheme.titleLarge),
                     const SizedBox(height: 2),
-                    Text(_time.format(job.scheduledAt), style: Theme.of(context).textTheme.bodyMedium),
+                    Text(time.format(job.scheduledAt), style: Theme.of(context).textTheme.bodyMedium),
                   ],
                 ),
               ),
               Column(
                 crossAxisAlignment: CrossAxisAlignment.end,
                 children: [
-                  Text('You earn', style: Theme.of(context).textTheme.labelSmall),
+                  Text(s.youEarn, style: Theme.of(context).textTheme.labelSmall),
                   Text(_money.format(job.payoutCents / 100),
                       style: Theme.of(context).textTheme.displaySmall?.copyWith(color: Sparkle.payout)),
                 ],
@@ -248,7 +251,7 @@ class _ActiveJobScreenState extends State<ActiveJobScreen> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  const _Label('Address'),
+                  _Label(s.address),
                   const SizedBox(height: Sparkle.s1),
                   Text(job.line1!, style: Theme.of(context).textTheme.titleMedium),
                   if (job.line2 != null && job.line2!.isNotEmpty)
@@ -256,7 +259,7 @@ class _ActiveJobScreenState extends State<ActiveJobScreen> {
                   Text(job.cityLine, style: Theme.of(context).textTheme.bodyMedium),
                   if (job.accessNotes != null && job.accessNotes!.isNotEmpty) ...[
                     const SizedBox(height: Sparkle.s3),
-                    const _Label('Getting in'),
+                    _Label(s.gettingIn),
                     const SizedBox(height: Sparkle.s1),
                     Text(job.accessNotes!, style: Theme.of(context).textTheme.bodyMedium),
                   ],
@@ -270,7 +273,7 @@ class _ActiveJobScreenState extends State<ActiveJobScreen> {
                   const Icon(Icons.lock_outline, size: 18, color: Sparkle.inkSoft),
                   const SizedBox(width: Sparkle.s2),
                   Expanded(
-                    child: Text('The full address unlocks when you start the job.',
+                    child: Text(s.addressLocked,
                         style: Theme.of(context).textTheme.bodyMedium),
                   ),
                 ],
@@ -282,7 +285,7 @@ class _ActiveJobScreenState extends State<ActiveJobScreen> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  const _Label('From the customer'),
+                  _Label(s.fromCustomer),
                   const SizedBox(height: Sparkle.s1),
                   Text(job.specialInstructions!, style: Theme.of(context).textTheme.bodyMedium),
                 ],
@@ -311,7 +314,7 @@ class _ActiveJobScreenState extends State<ActiveJobScreen> {
                     ),
                   ),
                   const SizedBox(height: Sparkle.s2),
-                  Text('Job complete', style: Theme.of(context).textTheme.titleLarge),
+                  Text(s.jobComplete, style: Theme.of(context).textTheme.titleLarge),
                 ],
               ),
             ),
@@ -322,6 +325,7 @@ class _ActiveJobScreenState extends State<ActiveJobScreen> {
   }
 
   Widget _photoCard() {
+    final s = SparkleStrings.of(context);
     final done = _afterPhotos >= _requiredAfterPhotos;
     return _Card(
       child: Column(
@@ -329,9 +333,9 @@ class _ActiveJobScreenState extends State<ActiveJobScreen> {
         children: [
           Row(
             children: [
-              const _Label('After-photos'),
+              _Label(s.afterPhotos),
               const Spacer(),
-              Text('$_afterPhotos of $_requiredAfterPhotos',
+              Text(s.photosCount(_afterPhotos, _requiredAfterPhotos),
                   style: TextStyle(
                       fontWeight: FontWeight.w700,
                       color: done ? Sparkle.seafoam : Sparkle.inkSoft)),
@@ -339,9 +343,7 @@ class _ActiveJobScreenState extends State<ActiveJobScreen> {
           ),
           const SizedBox(height: Sparkle.s1),
           Text(
-            done
-                ? 'You\'ve got enough to finish. Add more if you like.'
-                : 'A Deep Clean needs $_requiredAfterPhotos photos of the finished work before you can complete it.',
+            done ? s.photosEnoughBody : s.photosNeededBody(_requiredAfterPhotos),
             style: Theme.of(context).textTheme.bodyMedium,
           ),
           const SizedBox(height: Sparkle.s3),
@@ -351,7 +353,7 @@ class _ActiveJobScreenState extends State<ActiveJobScreen> {
                 ? const SizedBox(
                     height: 18, width: 18, child: CircularProgressIndicator(strokeWidth: 2, color: Sparkle.marine))
                 : const Icon(Icons.camera_alt_outlined, size: 18),
-            label: Text(_uploadingPhoto ? 'Uploading…' : 'Add photo'),
+            label: Text(_uploadingPhoto ? s.uploading : s.addPhoto),
             style: OutlinedButton.styleFrom(
               minimumSize: const Size.fromHeight(48),
               foregroundColor: Sparkle.marine,
@@ -378,7 +380,7 @@ class _ActiveJobScreenState extends State<ActiveJobScreen> {
         child: _busy
             ? const SizedBox(
                 height: 22, width: 22, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
-            : Text(step.label),
+            : Text(SparkleStrings.of(context).actionLabel(step.status)),
       ),
     );
   }
@@ -386,9 +388,8 @@ class _ActiveJobScreenState extends State<ActiveJobScreen> {
 
 class _Step {
   final String status;
-  final String label;
   final bool needsLocation;
-  const _Step(this.status, this.label, {required this.needsLocation});
+  const _Step(this.status, {required this.needsLocation});
 }
 
 class _StatusStepper extends StatelessWidget {
@@ -396,12 +397,6 @@ class _StatusStepper extends StatelessWidget {
   final String status;
 
   static const _order = ['en_route', 'arrived', 'in_progress', 'completed'];
-  static const _labels = {
-    'en_route': 'On the way',
-    'arrived': 'Arrived',
-    'in_progress': 'Cleaning',
-    'completed': 'Done',
-  };
 
   int get _reached {
     // 'assigned' is before the first step; 'settled' is past the last.
@@ -428,7 +423,7 @@ class _StatusStepper extends StatelessWidget {
                 ),
                 const SizedBox(height: Sparkle.s1),
                 Text(
-                  _labels[_order[i]]!,
+                  SparkleStrings.of(context).statusLabel(_order[i]),
                   style: TextStyle(
                     fontSize: 11,
                     fontWeight: i == _reached ? FontWeight.w700 : FontWeight.w500,
@@ -496,7 +491,7 @@ class _ErrorState extends StatelessWidget {
             const SizedBox(height: Sparkle.s4),
             Text(message, textAlign: TextAlign.center, style: Theme.of(context).textTheme.bodyMedium),
             const SizedBox(height: Sparkle.s4),
-            FilledButton(onPressed: onRetry, child: const Text('Try again')),
+            FilledButton(onPressed: onRetry, child: Text(SparkleStrings.of(context).tryAgain)),
           ],
         ),
       );

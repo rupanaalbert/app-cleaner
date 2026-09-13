@@ -2,8 +2,10 @@ import 'dart:async';
 import 'dart:convert';
 
 import 'package:flutter/material.dart';
+import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:http/http.dart' as http;
 import 'package:image_picker/image_picker.dart';
+import 'package:intl/date_symbol_data_local.dart';
 
 import 'core/theme.dart';
 import 'data/chat_repository.dart';
@@ -19,8 +21,16 @@ import 'features/onboarding/documents_step_screen.dart';
 import 'features/onboarding/onboarding_hub_screen.dart';
 import 'features/onboarding/payouts_step_screen.dart';
 import 'features/schedule/schedule_screen.dart';
+import 'l10n/sparkle_strings.dart';
 
-void main() => runApp(const SparkleCleanerApp());
+Future<void> main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+  // Spanish (and every other non-English intl locale) throws at first use
+  // unless its date-symbol data is loaded first — English is bundled and
+  // needs no call, which is why this was never missed before.
+  await initializeDateFormatting();
+  runApp(const SparkleCleanerApp());
+}
 
 // 10.0.2.2 is the Android emulator's alias for the host machine's localhost —
 // `npm run dev` in backend/ needs to already be running there.
@@ -51,6 +61,13 @@ class SparkleCleanerApp extends StatelessWidget {
       title: 'Sparkle',
       theme: Sparkle.theme(),
       debugShowCheckedModeBanner: false,
+      localizationsDelegates: const [
+        SparkleStringsDelegate(),
+        GlobalMaterialLocalizations.delegate,
+        GlobalWidgetsLocalizations.delegate,
+        GlobalCupertinoLocalizations.delegate,
+      ],
+      supportedLocales: SparkleStrings.supportedLocales,
       home: HomeShell(
         offers: HttpOffersRepository(baseUrl: _devApiBaseUrl, tokenProvider: _devTokenProvider),
         jobs: HttpJobsRepository(baseUrl: _devApiBaseUrl, tokenProvider: _devTokenProvider),
@@ -143,6 +160,7 @@ class _HomeShellState extends State<HomeShell> {
 
   @override
   Widget build(BuildContext context) {
+    final s = SparkleStrings.of(context);
     // Rebuilt per selection so Schedule and Earnings are always fresh when
     // opened — each loads on init and supports pull-to-refresh.
     final screen = switch (_tab) {
@@ -164,11 +182,11 @@ class _HomeShellState extends State<HomeShell> {
       bottomNavigationBar: NavigationBar(
         selectedIndex: _tab,
         onDestinationSelected: (i) => setState(() => _tab = i),
-        destinations: const [
-          NavigationDestination(icon: Icon(Icons.search), label: 'Discover'),
-          NavigationDestination(icon: Icon(Icons.event_note_outlined), label: 'Schedule'),
-          NavigationDestination(icon: Icon(Icons.payments_outlined), label: 'Earnings'),
-          NavigationDestination(icon: Icon(Icons.verified_user_outlined), label: 'Approval'),
+        destinations: [
+          NavigationDestination(icon: const Icon(Icons.search), label: s.navDiscover),
+          NavigationDestination(icon: const Icon(Icons.event_note_outlined), label: s.navSchedule),
+          NavigationDestination(icon: const Icon(Icons.payments_outlined), label: s.navEarnings),
+          NavigationDestination(icon: const Icon(Icons.verified_user_outlined), label: s.navApproval),
         ],
       ),
     );

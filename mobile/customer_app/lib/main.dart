@@ -2,13 +2,23 @@ import 'dart:convert';
 import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
+import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:http/http.dart' as http;
+import 'package:intl/date_symbol_data_local.dart';
 
 import 'core/theme.dart';
 import 'data/booking_repository.dart';
 import 'features/booking/booking_flow_screen.dart';
+import 'l10n/sparkle_strings.dart';
 
-void main() => runApp(const SparkleCustomerApp());
+Future<void> main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+  // Spanish (and every other non-English intl locale) throws at first use
+  // unless its date-symbol data is loaded first — English is bundled and
+  // needs no call, which is why this was never missed before.
+  await initializeDateFormatting();
+  runApp(const SparkleCustomerApp());
+}
 
 // 10.0.2.2 is the Android emulator's alias for the host machine's localhost —
 // `npm run dev` in backend/ needs to already be running there.
@@ -37,6 +47,13 @@ class SparkleCustomerApp extends StatelessWidget {
       title: 'Sparkle',
       theme: Sparkle.theme(),
       debugShowCheckedModeBanner: false,
+      localizationsDelegates: const [
+        SparkleStringsDelegate(),
+        GlobalMaterialLocalizations.delegate,
+        GlobalWidgetsLocalizations.delegate,
+        GlobalCupertinoLocalizations.delegate,
+      ],
+      supportedLocales: SparkleStrings.supportedLocales,
       home: BookingFlowScreen(
         repository: HttpBookingRepository(baseUrl: _devApiBaseUrl, tokenProvider: _devTokenProvider),
         // Priya Raman's seeded property — swap once a real property picker exists.

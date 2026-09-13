@@ -5,6 +5,7 @@ import 'package:intl/intl.dart';
 import '../../core/theme.dart';
 import '../../core/widgets/sparkle_card.dart';
 import '../../data/earnings_repository.dart';
+import '../../l10n/sparkle_strings.dart';
 
 enum _Period { week, month, all }
 
@@ -25,7 +26,6 @@ class EarningsScreen extends StatefulWidget {
 
 class _EarningsScreenState extends State<EarningsScreen> {
   final _money = NumberFormat.currency(symbol: r'$', decimalDigits: 2);
-  final _date = DateFormat('EEE d MMM');
 
   _Period _period = _Period.week;
   Earnings? _earnings;
@@ -68,7 +68,7 @@ class _EarningsScreenState extends State<EarningsScreen> {
       if (!mounted) return;
       setState(() {
         _loading = false;
-        _error = e is ApiFailure ? e.message : 'Could not load earnings. Pull down to retry.';
+        _error = e is ApiFailure ? e.message : SparkleStrings.of(context).couldNotLoadEarnings;
       });
     }
   }
@@ -84,8 +84,9 @@ class _EarningsScreenState extends State<EarningsScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final s = SparkleStrings.of(context);
     return Scaffold(
-      appBar: AppBar(title: const Text('Earnings')),
+      appBar: AppBar(title: Text(s.earningsTitle)),
       body: RefreshIndicator(
         onRefresh: _load,
         color: Sparkle.marine,
@@ -139,17 +140,19 @@ class _EarningsScreenState extends State<EarningsScreen> {
       );
     }
 
+    final s = SparkleStrings.of(context);
     return Container(
       decoration: BoxDecoration(color: Sparkle.hairline.withValues(alpha: 0.5), borderRadius: BorderRadius.circular(13)),
       child: Row(children: [
-        seg(_Period.week, 'This week'),
-        seg(_Period.month, 'This month'),
-        seg(_Period.all, 'All time'),
+        seg(_Period.week, s.periodWeek),
+        seg(_Period.month, s.periodMonth),
+        seg(_Period.all, s.periodAll),
       ]),
     );
   }
 
   Widget _summary(Earnings e) {
+    final s = SparkleStrings.of(context);
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
@@ -166,7 +169,7 @@ class _EarningsScreenState extends State<EarningsScreen> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text('TAKE-HOME',
+                    Text(s.takeHome,
                         style: Theme.of(context).textTheme.labelSmall?.copyWith(color: Sparkle.mutedOnMarine)),
                     const SizedBox(height: Sparkle.s1),
                     Text(
@@ -174,7 +177,7 @@ class _EarningsScreenState extends State<EarningsScreen> {
                       style: Theme.of(context).textTheme.displaySmall?.copyWith(color: Sparkle.payout, fontSize: 40),
                     ),
                     const SizedBox(height: Sparkle.s1),
-                    Text('${e.jobs} ${e.jobs == 1 ? 'job' : 'jobs'} · your share plus tips',
+                    Text(s.jobsShare(e.jobs),
                         style: const TextStyle(color: Color(0xFFA9C6CD), fontSize: 13)),
                   ],
                 ),
@@ -194,13 +197,13 @@ class _EarningsScreenState extends State<EarningsScreen> {
         _Card(
           child: Column(
             children: [
-              _Row(label: 'Your share', value: _money.format(e.netCents / 100)),
+              _Row(label: s.yourShare, value: _money.format(e.netCents / 100)),
               const _Divider(),
-              _Row(label: 'Tips', value: _money.format(e.tipsCents / 100)),
+              _Row(label: s.tips, value: _money.format(e.tipsCents / 100)),
               const _Divider(),
-              _Row(label: 'Booked (gross)', value: _money.format(e.grossCents / 100), muted: true),
+              _Row(label: s.bookedGross, value: _money.format(e.grossCents / 100), muted: true),
               const _Divider(),
-              _Row(label: 'Platform fee', value: '−${_money.format(e.commissionCents / 100)}', muted: true),
+              _Row(label: s.platformFee, value: '−${_money.format(e.commissionCents / 100)}', muted: true),
             ],
           ),
         ),
@@ -211,6 +214,8 @@ class _EarningsScreenState extends State<EarningsScreen> {
   }
 
   Widget _nextPayout(Earnings e) {
+    final s = SparkleStrings.of(context);
+    final date = DateFormat('EEE d MMM', Localizations.localeOf(context).toString());
     final cents = e.nextPayoutCents ?? 0;
     return _Card(
       child: Row(
@@ -225,14 +230,14 @@ class _EarningsScreenState extends State<EarningsScreen> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const _Label('Next payout'),
+                _Label(s.nextPayout),
                 const SizedBox(height: 2),
                 Text(
                   cents == 0
-                      ? 'No payout pending'
+                      ? s.noPayoutPending
                       : e.nextPayoutArrival == null
-                          ? 'On its way'
-                          : 'Arrives ${_date.format(e.nextPayoutArrival!.toLocal())}',
+                          ? s.onItsWay
+                          : s.arrives(date.format(e.nextPayoutArrival!.toLocal())),
                   style: Theme.of(context).textTheme.bodyMedium,
                 ),
               ],
@@ -312,7 +317,7 @@ class _ErrorState extends StatelessWidget {
             const SizedBox(height: Sparkle.s4),
             Text(message, textAlign: TextAlign.center, style: Theme.of(context).textTheme.bodyMedium),
             const SizedBox(height: Sparkle.s4),
-            FilledButton(onPressed: onRetry, child: const Text('Try again')),
+            FilledButton(onPressed: onRetry, child: Text(SparkleStrings.of(context).tryAgain)),
           ],
         ),
       );
