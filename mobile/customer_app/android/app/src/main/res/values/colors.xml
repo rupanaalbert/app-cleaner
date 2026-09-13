@@ -1,0 +1,5 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Sparkle.marine — must match core/theme.dart's marine token in both apps. -->
+    <color name="sparkle_marine">#0E3A45</color>
+</resources>
