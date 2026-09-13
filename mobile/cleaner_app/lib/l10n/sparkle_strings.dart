@@ -1,4 +1,4 @@
-import 'package:flutter/widgets.dart';
+import 'package:flutter/material.dart';
 
 /// Hand-written localization — no `flutter gen-l10n`/ARB codegen, on purpose.
 /// This machine has no Flutter toolchain to run the generator or catch a
@@ -459,4 +459,37 @@ class SparkleStringsDelegate extends LocalizationsDelegate<SparkleStrings> {
 
   @override
   bool shouldReload(covariant LocalizationsDelegate<SparkleStrings> old) => false;
+}
+
+/// App-wide language override, in memory only (resets on cold start — this
+/// app has no persistence layer for settings yet, and adding one just for
+/// this felt like more risk than the feature warranted on a machine that
+/// can't verify a new dependency resolves). `null` means "follow the device
+/// locale", same as before this existed. A bare `ValueNotifier` rather than a
+/// state-management package, so `MaterialApp` and [LanguageSwitch] can share
+/// it without adding a dependency.
+final ValueNotifier<Locale?> localeOverride = ValueNotifier<Locale?>(null);
+
+/// A small "EN"/"ES" toggle — shows the language a tap switches *to*, not the
+/// current one, matching the landing page's switcher. Reads the resolved
+/// locale via `Localizations.localeOf`, not `localeOverride.value` directly,
+/// so it's correct even before the user has ever touched the toggle (i.e.
+/// while following the device locale).
+class LanguageSwitch extends StatelessWidget {
+  const LanguageSwitch({super.key, required this.color});
+  final Color color;
+
+  @override
+  Widget build(BuildContext context) {
+    final current = Localizations.localeOf(context).languageCode;
+    final next = current == 'es' ? 'en' : 'es';
+    return TextButton(
+      onPressed: () => localeOverride.value = Locale(next),
+      style: TextButton.styleFrom(
+        foregroundColor: color,
+        minimumSize: const Size(44, 44),
+      ),
+      child: Text(next.toUpperCase(), style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 13)),
+    );
+  }
 }

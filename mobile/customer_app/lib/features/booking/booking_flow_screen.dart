@@ -116,6 +116,7 @@ class _BookingFlowScreenState extends State<BookingFlowScreen> {
             title: Text(widget.addressLine,
                 style: const TextStyle(fontSize: 14, color: Sparkle.inkSoft)),
             centerTitle: true,
+            actions: const [LanguageSwitch(color: Sparkle.inkSoft)],
             bottom: PreferredSize(
               preferredSize: const Size.fromHeight(3),
               child: _StepBar(index: c.stepIndex, total: BookingStep.values.length),

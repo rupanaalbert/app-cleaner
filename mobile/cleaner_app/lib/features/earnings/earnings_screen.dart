@@ -86,7 +86,7 @@ class _EarningsScreenState extends State<EarningsScreen> {
   Widget build(BuildContext context) {
     final s = SparkleStrings.of(context);
     return Scaffold(
-      appBar: AppBar(title: Text(s.earningsTitle)),
+      appBar: AppBar(title: Text(s.earningsTitle), actions: const [LanguageSwitch(color: Colors.white)]),
       body: RefreshIndicator(
         onRefresh: _load,
         color: Sparkle.marine,

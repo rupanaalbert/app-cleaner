@@ -43,22 +43,26 @@ class SparkleCustomerApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return MaterialApp(
-      title: 'Sparkle',
-      theme: Sparkle.theme(),
-      debugShowCheckedModeBanner: false,
-      localizationsDelegates: const [
-        SparkleStringsDelegate(),
-        GlobalMaterialLocalizations.delegate,
-        GlobalWidgetsLocalizations.delegate,
-        GlobalCupertinoLocalizations.delegate,
-      ],
-      supportedLocales: SparkleStrings.supportedLocales,
-      home: BookingFlowScreen(
-        repository: HttpBookingRepository(baseUrl: _devApiBaseUrl, tokenProvider: _devTokenProvider),
-        // Priya Raman's seeded property — swap once a real property picker exists.
-        propertyId: '01a035ac-a36f-7425-aa64-ab3dc61924b8',
-        addressLine: '10 Pleasant St, Methuen',
+    return ValueListenableBuilder<Locale?>(
+      valueListenable: localeOverride,
+      builder: (context, locale, _) => MaterialApp(
+        title: 'Sparkle',
+        theme: Sparkle.theme(),
+        debugShowCheckedModeBanner: false,
+        locale: locale,
+        localizationsDelegates: const [
+          SparkleStringsDelegate(),
+          GlobalMaterialLocalizations.delegate,
+          GlobalWidgetsLocalizations.delegate,
+          GlobalCupertinoLocalizations.delegate,
+        ],
+        supportedLocales: SparkleStrings.supportedLocales,
+        home: BookingFlowScreen(
+          repository: HttpBookingRepository(baseUrl: _devApiBaseUrl, tokenProvider: _devTokenProvider),
+          // Priya Raman's seeded property — swap once a real property picker exists.
+          propertyId: '01a035ac-a36f-7425-aa64-ab3dc61924b8',
+          addressLine: '10 Pleasant St, Methuen',
+        ),
       ),
     );
   }

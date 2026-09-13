@@ -57,24 +57,28 @@ class SparkleCleanerApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return MaterialApp(
-      title: 'Sparkle',
-      theme: Sparkle.theme(),
-      debugShowCheckedModeBanner: false,
-      localizationsDelegates: const [
-        SparkleStringsDelegate(),
-        GlobalMaterialLocalizations.delegate,
-        GlobalWidgetsLocalizations.delegate,
-        GlobalCupertinoLocalizations.delegate,
-      ],
-      supportedLocales: SparkleStrings.supportedLocales,
-      home: HomeShell(
-        offers: HttpOffersRepository(baseUrl: _devApiBaseUrl, tokenProvider: _devTokenProvider),
-        jobs: HttpJobsRepository(baseUrl: _devApiBaseUrl, tokenProvider: _devTokenProvider),
-        earnings: HttpEarningsRepository(baseUrl: _devApiBaseUrl, tokenProvider: _devTokenProvider),
-        locator: const FakeLocator(),
-        chat: _FakeChatRepository(),
-        onboarding: HttpOnboardingRepository(baseUrl: _devApiBaseUrl, tokenProvider: _devTokenProvider),
+    return ValueListenableBuilder<Locale?>(
+      valueListenable: localeOverride,
+      builder: (context, locale, _) => MaterialApp(
+        title: 'Sparkle',
+        theme: Sparkle.theme(),
+        debugShowCheckedModeBanner: false,
+        locale: locale,
+        localizationsDelegates: const [
+          SparkleStringsDelegate(),
+          GlobalMaterialLocalizations.delegate,
+          GlobalWidgetsLocalizations.delegate,
+          GlobalCupertinoLocalizations.delegate,
+        ],
+        supportedLocales: SparkleStrings.supportedLocales,
+        home: HomeShell(
+          offers: HttpOffersRepository(baseUrl: _devApiBaseUrl, tokenProvider: _devTokenProvider),
+          jobs: HttpJobsRepository(baseUrl: _devApiBaseUrl, tokenProvider: _devTokenProvider),
+          earnings: HttpEarningsRepository(baseUrl: _devApiBaseUrl, tokenProvider: _devTokenProvider),
+          locator: const FakeLocator(),
+          chat: _FakeChatRepository(),
+          onboarding: HttpOnboardingRepository(baseUrl: _devApiBaseUrl, tokenProvider: _devTokenProvider),
+        ),
       ),
     );
   }

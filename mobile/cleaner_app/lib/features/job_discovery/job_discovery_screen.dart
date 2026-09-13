@@ -197,6 +197,7 @@ class _JobDiscoveryScreenState extends State<JobDiscoveryScreen> {
       expandedHeight: 144,
       backgroundColor: Sparkle.marine,
       foregroundColor: Colors.white,
+      actions: const [LanguageSwitch(color: Colors.white)],
       flexibleSpace: FlexibleSpaceBar(
         titlePadding: const EdgeInsets.fromLTRB(Sparkle.s4, 0, Sparkle.s4, Sparkle.s3),
         title: Row(
