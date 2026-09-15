@@ -4,6 +4,7 @@ import 'package:intl/intl.dart';
 
 import '../../core/theme.dart';
 import '../../core/widgets/sparkle_card.dart';
+import '../../data/auth_controller.dart';
 import '../../data/earnings_repository.dart';
 import '../../l10n/sparkle_strings.dart';
 
@@ -16,9 +17,10 @@ enum _Period { week, month, all }
 /// there for trust, not pride of place. The next payout — amount and arrival —
 /// sits right under it, since "when do I get paid" is the actual question.
 class EarningsScreen extends StatefulWidget {
-  const EarningsScreen({super.key, required this.repository});
+  const EarningsScreen({super.key, required this.repository, required this.auth});
 
   final EarningsRepository repository;
+  final AuthController auth;
 
   @override
   State<EarningsScreen> createState() => _EarningsScreenState();
@@ -86,7 +88,17 @@ class _EarningsScreenState extends State<EarningsScreen> {
   Widget build(BuildContext context) {
     final s = SparkleStrings.of(context);
     return Scaffold(
-      appBar: AppBar(title: Text(s.earningsTitle), actions: const [LanguageSwitch(color: Colors.white)]),
+      appBar: AppBar(
+        title: Text(s.earningsTitle),
+        actions: [
+          const LanguageSwitch(color: Colors.white),
+          IconButton(
+            icon: const Icon(Icons.logout, color: Colors.white),
+            tooltip: 'Log out',
+            onPressed: () => widget.auth.logout(),
+          ),
+        ],
+      ),
       body: RefreshIndicator(
         onRefresh: _load,
         color: Sparkle.marine,

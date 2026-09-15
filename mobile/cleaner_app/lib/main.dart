@@ -1,13 +1,13 @@
 import 'dart:async';
-import 'dart:convert';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
-import 'package:http/http.dart' as http;
 import 'package:image_picker/image_picker.dart';
 import 'package:intl/date_symbol_data_local.dart';
 
 import 'core/theme.dart';
+import 'data/auth_controller.dart';
+import 'data/auth_repository.dart';
 import 'data/chat_repository.dart';
 import 'data/earnings_repository.dart';
 import 'data/geolocation.dart';
@@ -15,6 +15,7 @@ import 'data/jobs_repository.dart';
 import 'data/offers_repository.dart';
 import 'data/onboarding_repository.dart';
 import 'features/active_job/active_job_screen.dart';
+import 'features/auth/login_screen.dart';
 import 'features/earnings/earnings_screen.dart';
 import 'features/job_discovery/job_discovery_screen.dart';
 import 'features/onboarding/documents_step_screen.dart';
@@ -36,50 +37,68 @@ Future<void> main() async {
 // `npm run dev` in backend/ needs to already be running there.
 const _devApiBaseUrl = 'http://10.0.2.2:8080';
 
-// There's no login screen wired up yet, so this logs in with a seeded dev
-// cleaner on every token request rather than caching — simplest thing that
-// can't hand the app a stale/expired access token. Swap for a real session
-// once auth exists. Chat and location stay on their fakes: chat needs
-// Firebase config that doesn't exist yet, and there's no real device/GPS
-// position worth publishing from an emulator.
-Future<String> _devTokenProvider() async {
-  final res = await http.post(
-    Uri.parse('$_devApiBaseUrl/v1/auth/login'),
-    headers: {'content-type': 'application/json'},
-    body: jsonEncode({'email': 'amara.osei@example.com', 'password': 'sparkle-dev-password'}),
-  );
-  if (res.statusCode != 200) throw StateError('dev login failed: ${res.statusCode} ${res.body}');
-  return (jsonDecode(res.body) as Map<String, dynamic>)['access_token'] as String;
+class SparkleCleanerApp extends StatefulWidget {
+  const SparkleCleanerApp({super.key});
+
+  @override
+  State<SparkleCleanerApp> createState() => _SparkleCleanerAppState();
 }
 
-class SparkleCleanerApp extends StatelessWidget {
-  const SparkleCleanerApp({super.key});
+class _SparkleCleanerAppState extends State<SparkleCleanerApp> {
+  late final AuthController _auth;
+
+  @override
+  void initState() {
+    super.initState();
+    _auth = AuthController(repository: HttpAuthRepository(baseUrl: _devApiBaseUrl, role: 'cleaner'));
+    _auth.bootstrap();
+  }
 
   @override
   Widget build(BuildContext context) {
     return ValueListenableBuilder<Locale?>(
       valueListenable: localeOverride,
-      builder: (context, locale, _) => MaterialApp(
-        title: 'Sparkle',
-        theme: Sparkle.theme(),
-        debugShowCheckedModeBanner: false,
-        locale: locale,
-        localizationsDelegates: const [
-          SparkleStringsDelegate(),
-          GlobalMaterialLocalizations.delegate,
-          GlobalWidgetsLocalizations.delegate,
-          GlobalCupertinoLocalizations.delegate,
-        ],
-        supportedLocales: SparkleStrings.supportedLocales,
-        home: HomeShell(
-          offers: HttpOffersRepository(baseUrl: _devApiBaseUrl, tokenProvider: _devTokenProvider),
-          jobs: HttpJobsRepository(baseUrl: _devApiBaseUrl, tokenProvider: _devTokenProvider),
-          earnings: HttpEarningsRepository(baseUrl: _devApiBaseUrl, tokenProvider: _devTokenProvider),
-          locator: const FakeLocator(),
-          chat: _FakeChatRepository(),
-          onboarding: HttpOnboardingRepository(baseUrl: _devApiBaseUrl, tokenProvider: _devTokenProvider),
+      builder: (context, locale, _) => ValueListenableBuilder<AuthState>(
+        valueListenable: _auth.state,
+        builder: (context, authState, __) => MaterialApp(
+          title: 'Sparkle',
+          theme: Sparkle.theme(),
+          debugShowCheckedModeBanner: false,
+          locale: locale,
+          localizationsDelegates: const [
+            SparkleStringsDelegate(),
+            GlobalMaterialLocalizations.delegate,
+            GlobalWidgetsLocalizations.delegate,
+            GlobalCupertinoLocalizations.delegate,
+          ],
+          supportedLocales: SparkleStrings.supportedLocales,
+          home: switch (authState) {
+            AuthUnknown() => const _SplashScreen(),
+            AuthSignedOut() => LoginScreen(auth: _auth),
+            AuthSignedIn() => HomeShell(
+                offers: HttpOffersRepository(baseUrl: _devApiBaseUrl, tokenProvider: _auth.tokenProvider),
+                jobs: HttpJobsRepository(baseUrl: _devApiBaseUrl, tokenProvider: _auth.tokenProvider),
+                earnings: HttpEarningsRepository(baseUrl: _devApiBaseUrl, tokenProvider: _auth.tokenProvider),
+                locator: const FakeLocator(),
+                chat: _FakeChatRepository(),
+                onboarding: HttpOnboardingRepository(baseUrl: _devApiBaseUrl, tokenProvider: _auth.tokenProvider),
+                auth: _auth,
+              ),
+          },
         ),
       ),
+    );
+  }
+}
+
+class _SplashScreen extends StatelessWidget {
+  const _SplashScreen();
+
+  @override
+  Widget build(BuildContext context) {
+    return const Scaffold(
+      backgroundColor: Sparkle.marine,
+      body: Center(child: CircularProgressIndicator(color: Sparkle.seafoam)),
     );
   }
 }
@@ -95,6 +114,7 @@ class HomeShell extends StatefulWidget {
     required this.locator,
     required this.chat,
     required this.onboarding,
+    required this.auth,
   });
 
   final OffersRepository offers;
@@ -103,6 +123,7 @@ class HomeShell extends StatefulWidget {
   final Locator locator;
   final ChatRepository chat;
   final OnboardingRepository onboarding;
+  final AuthController auth;
 
   @override
   State<HomeShell> createState() => _HomeShellState();
@@ -169,7 +190,7 @@ class _HomeShellState extends State<HomeShell> {
     // opened — each loads on init and supports pull-to-refresh.
     final screen = switch (_tab) {
       1 => ScheduleScreen(repository: widget.jobs, onOpenJob: _openJob),
-      2 => EarningsScreen(repository: widget.earnings),
+      2 => EarningsScreen(repository: widget.earnings, auth: widget.auth),
       3 => OnboardingHubScreen(
           key: ValueKey(_onboardingRefreshTick),
           repository: widget.onboarding,
@@ -178,6 +199,7 @@ class _HomeShellState extends State<HomeShell> {
       _ => JobDiscoveryScreen(
           repository: widget.offers,
           onOfferAccepted: (_) => setState(() => _tab = 1), // land on the schedule
+          auth: widget.auth,
         ),
     };
 

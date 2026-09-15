@@ -6,6 +6,7 @@ import 'package:flutter_svg/flutter_svg.dart';
 import 'package:intl/intl.dart';
 
 import '../../core/theme.dart';
+import '../../data/auth_controller.dart';
 import '../../data/offers_repository.dart';
 import '../../l10n/sparkle_strings.dart';
 
@@ -22,10 +23,12 @@ class JobDiscoveryScreen extends StatefulWidget {
   const JobDiscoveryScreen({
     super.key,
     required this.repository,
+    required this.auth,
     this.onOfferAccepted,
   });
 
   final OffersRepository repository;
+  final AuthController auth;
   final void Function(JobOffer offer)? onOfferAccepted;
 
   @override
@@ -197,7 +200,14 @@ class _JobDiscoveryScreenState extends State<JobDiscoveryScreen> {
       expandedHeight: 144,
       backgroundColor: Sparkle.marine,
       foregroundColor: Colors.white,
-      actions: const [LanguageSwitch(color: Colors.white)],
+      actions: [
+        const LanguageSwitch(color: Colors.white),
+        IconButton(
+          icon: const Icon(Icons.logout, color: Colors.white),
+          tooltip: 'Log out',
+          onPressed: () => widget.auth.logout(),
+        ),
+      ],
       flexibleSpace: FlexibleSpaceBar(
         titlePadding: const EdgeInsets.fromLTRB(Sparkle.s4, 0, Sparkle.s4, Sparkle.s3),
         title: Row(

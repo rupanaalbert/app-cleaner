@@ -3,6 +3,7 @@ import 'package:flutter_svg/flutter_svg.dart';
 import 'package:intl/intl.dart';
 
 import '../../core/theme.dart';
+import '../../data/auth_controller.dart';
 import '../../data/booking_repository.dart';
 import '../../l10n/sparkle_strings.dart';
 import 'booking_controller.dart';
@@ -28,11 +29,13 @@ class BookingFlowScreen extends StatefulWidget {
     required this.repository,
     required this.propertyId,
     required this.addressLine,
+    required this.auth,
   });
 
   final BookingRepository repository;
   final String propertyId;
   final String addressLine;
+  final AuthController auth;
 
   @override
   State<BookingFlowScreen> createState() => _BookingFlowScreenState();
@@ -116,7 +119,14 @@ class _BookingFlowScreenState extends State<BookingFlowScreen> {
             title: Text(widget.addressLine,
                 style: const TextStyle(fontSize: 14, color: Sparkle.inkSoft)),
             centerTitle: true,
-            actions: const [LanguageSwitch(color: Sparkle.inkSoft)],
+            actions: [
+              const LanguageSwitch(color: Sparkle.inkSoft),
+              IconButton(
+                icon: const Icon(Icons.logout, color: Sparkle.inkSoft),
+                tooltip: 'Log out',
+                onPressed: () => widget.auth.logout(),
+              ),
+            ],
             bottom: PreferredSize(
               preferredSize: const Size.fromHeight(3),
               child: _StepBar(index: c.stepIndex, total: BookingStep.values.length),

@@ -1,13 +1,14 @@
-import 'dart:convert';
 import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
-import 'package:http/http.dart' as http;
 import 'package:intl/date_symbol_data_local.dart';
 
 import 'core/theme.dart';
+import 'data/auth_controller.dart';
+import 'data/auth_repository.dart';
 import 'data/booking_repository.dart';
+import 'features/auth/login_screen.dart';
 import 'features/booking/booking_flow_screen.dart';
 import 'l10n/sparkle_strings.dart';
 
@@ -24,46 +25,70 @@ Future<void> main() async {
 // `npm run dev` in backend/ needs to already be running there.
 const _devApiBaseUrl = 'http://10.0.2.2:8080';
 
-// There's no login screen wired up yet, so this logs in with a seeded dev
-// account on every token request rather than caching — simplest thing that
-// can't hand the app a stale/expired access token. Swap for a real session
-// once auth exists.
-Future<String> _devTokenProvider() async {
-  final res = await http.post(
-    Uri.parse('$_devApiBaseUrl/v1/auth/login'),
-    headers: {'content-type': 'application/json'},
-    body: jsonEncode({'email': 'priya.raman@example.com', 'password': 'sparkle-dev-password'}),
-  );
-  if (res.statusCode != 200) throw StateError('dev login failed: ${res.statusCode} ${res.body}');
-  return (jsonDecode(res.body) as Map<String, dynamic>)['access_token'] as String;
+class SparkleCustomerApp extends StatefulWidget {
+  const SparkleCustomerApp({super.key});
+
+  @override
+  State<SparkleCustomerApp> createState() => _SparkleCustomerAppState();
 }
 
-class SparkleCustomerApp extends StatelessWidget {
-  const SparkleCustomerApp({super.key});
+class _SparkleCustomerAppState extends State<SparkleCustomerApp> {
+  late final AuthController _auth;
+
+  @override
+  void initState() {
+    super.initState();
+    _auth = AuthController(
+      repository: HttpAuthRepository(baseUrl: _devApiBaseUrl, role: 'customer'),
+    );
+    _auth.bootstrap();
+  }
 
   @override
   Widget build(BuildContext context) {
     return ValueListenableBuilder<Locale?>(
       valueListenable: localeOverride,
-      builder: (context, locale, _) => MaterialApp(
-        title: 'Sparkle',
-        theme: Sparkle.theme(),
-        debugShowCheckedModeBanner: false,
-        locale: locale,
-        localizationsDelegates: const [
-          SparkleStringsDelegate(),
-          GlobalMaterialLocalizations.delegate,
-          GlobalWidgetsLocalizations.delegate,
-          GlobalCupertinoLocalizations.delegate,
-        ],
-        supportedLocales: SparkleStrings.supportedLocales,
-        home: BookingFlowScreen(
-          repository: HttpBookingRepository(baseUrl: _devApiBaseUrl, tokenProvider: _devTokenProvider),
-          // Priya Raman's seeded property — swap once a real property picker exists.
-          propertyId: '01a035ac-a36f-7425-aa64-ab3dc61924b8',
-          addressLine: '10 Pleasant St, Methuen',
+      builder: (context, locale, _) => ValueListenableBuilder<AuthState>(
+        valueListenable: _auth.state,
+        builder: (context, authState, __) => MaterialApp(
+          title: 'Sparkle',
+          theme: Sparkle.theme(),
+          debugShowCheckedModeBanner: false,
+          locale: locale,
+          localizationsDelegates: const [
+            SparkleStringsDelegate(),
+            GlobalMaterialLocalizations.delegate,
+            GlobalWidgetsLocalizations.delegate,
+            GlobalCupertinoLocalizations.delegate,
+          ],
+          supportedLocales: SparkleStrings.supportedLocales,
+          home: switch (authState) {
+            AuthUnknown() => const _SplashScreen(),
+            AuthSignedOut() => LoginScreen(auth: _auth),
+            AuthSignedIn() => BookingFlowScreen(
+                repository: HttpBookingRepository(baseUrl: _devApiBaseUrl, tokenProvider: _auth.tokenProvider),
+                // Whichever machine's `npm run seed` produced this doesn't
+                // match every database — a real property picker is still a
+                // separate, pre-existing gap unrelated to auth.
+                propertyId: '01a035ac-a36f-7425-aa64-ab3dc61924b8',
+                addressLine: '10 Pleasant St, Methuen',
+                auth: _auth,
+              ),
+          },
         ),
       ),
+    );
+  }
+}
+
+class _SplashScreen extends StatelessWidget {
+  const _SplashScreen();
+
+  @override
+  Widget build(BuildContext context) {
+    return const Scaffold(
+      backgroundColor: Sparkle.marine,
+      body: Center(child: CircularProgressIndicator(color: Sparkle.seafoam)),
     );
   }
 }
