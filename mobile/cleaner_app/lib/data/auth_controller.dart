@@ -74,10 +74,17 @@ class AuthController {
       _session = next;
       state.value = AuthSignedIn(next.user);
       return next;
-    } on AuthFailure {
-      // Expired, reused, or revoked — the whole family is dead server-side.
-      await _storage.delete(key: _kRefreshTokenKey);
-      _session = null;
+    } catch (e) {
+      // Only a confirmed-dead token (expired/reused/revoked) should discard
+      // the stored refresh token. Anything else — a network failure, a
+      // timeout, an unparseable response — is treated as transient: sign the
+      // user out of this session so the app never hangs on the splash
+      // screen, but leave the stored token in place so a later retry (e.g.
+      // the next cold start) can still succeed with it.
+      if (e is AuthFailure && e.code == 'UNAUTHENTICATED') {
+        await _storage.delete(key: _kRefreshTokenKey);
+        _session = null;
+      }
       state.value = const AuthSignedOut();
       rethrow;
     }

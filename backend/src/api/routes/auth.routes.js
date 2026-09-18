@@ -70,7 +70,10 @@ router.post('/refresh', async (req, res, next) => {
 });
 
 router.post('/logout', requireAuth,
-  validate(z.object({ all_devices: z.boolean().default(false) })),
+  validate(z.object({
+    refresh_token: z.string().optional(),
+    all_devices: z.boolean().default(false),
+  })),
   async (req, res, next) => {
     try {
       const result = await AuthService.logout({
