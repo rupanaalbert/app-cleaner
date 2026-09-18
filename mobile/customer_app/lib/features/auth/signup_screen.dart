@@ -69,7 +69,12 @@ class _SignupScreenState extends State<SignupScreen> {
         fullName: _fullName.text.trim(),
         phone: _phone.text.trim().isEmpty ? null : _phone.text.trim(),
       );
-      // main.dart swaps `home:` automatically once state flips to AuthSignedIn.
+      // main.dart's `home:` already swapped the moment state flipped to
+      // AuthSignedIn, but this screen is always reached via a push (from
+      // LoginScreen), so it's sitting on top of that already-updated root
+      // and needs popping to reveal it.
+      if (!mounted) return;
+      Navigator.of(context).popUntil((route) => route.isFirst);
     } on AuthFailure catch (e) {
       if (!mounted) return;
       if (e.fields.isNotEmpty) {

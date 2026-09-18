@@ -15,6 +15,7 @@ import checkrWebhook from './webhooks/checkr.js';
 import authRoutes from './api/routes/auth.routes.js';
 import quoteRoutes from './api/routes/quotes.routes.js';
 import bookingRoutes from './api/routes/bookings.routes.js';
+import propertyRoutes from './api/routes/properties.routes.js';
 import offerRoutes from './api/routes/offers.routes.js';
 import paymentRoutes from './api/routes/payments.routes.js';
 import reviewRoutes from './api/routes/reviews.routes.js';
@@ -59,6 +60,7 @@ export function createApp() {
   app.use('/v1', apiLimiter);
   app.use('/v1/quotes', quoteRoutes);
   app.use('/v1/bookings', bookingRoutes);
+  app.use('/v1/properties', propertyRoutes);
   app.use('/v1', offerRoutes);       // /cleaner/offers, /offers/:id/accept
   app.use('/v1', paymentRoutes);
   app.use('/v1', reviewRoutes);

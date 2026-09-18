@@ -8,8 +8,10 @@ import 'core/theme.dart';
 import 'data/auth_controller.dart';
 import 'data/auth_repository.dart';
 import 'data/booking_repository.dart';
+import 'data/property_repository.dart';
 import 'features/auth/login_screen.dart';
 import 'features/booking/booking_flow_screen.dart';
+import 'features/property/property_gate_screen.dart';
 import 'l10n/sparkle_strings.dart';
 
 Future<void> main() async {
@@ -65,14 +67,14 @@ class _SparkleCustomerAppState extends State<SparkleCustomerApp> {
           home: switch (authState) {
             AuthUnknown() => const _SplashScreen(),
             AuthSignedOut() => LoginScreen(auth: _auth),
-            AuthSignedIn() => BookingFlowScreen(
-                repository: HttpBookingRepository(baseUrl: _devApiBaseUrl, tokenProvider: _auth.tokenProvider),
-                // Whichever machine's `npm run seed` produced this doesn't
-                // match every database — a real property picker is still a
-                // separate, pre-existing gap unrelated to auth.
-                propertyId: '01a035ac-a36f-7425-aa64-ab3dc61924b8',
-                addressLine: '10 Pleasant St, Methuen',
-                auth: _auth,
+            AuthSignedIn() => PropertyGateScreen(
+                properties: HttpPropertyRepository(baseUrl: _devApiBaseUrl, tokenProvider: _auth.tokenProvider),
+                builder: (property) => BookingFlowScreen(
+                  repository: HttpBookingRepository(baseUrl: _devApiBaseUrl, tokenProvider: _auth.tokenProvider),
+                  propertyId: property.id,
+                  addressLine: property.shortAddress,
+                  auth: _auth,
+                ),
               ),
           },
         ),

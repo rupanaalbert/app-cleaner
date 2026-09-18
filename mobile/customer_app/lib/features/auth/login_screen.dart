@@ -51,8 +51,14 @@ class _LoginScreenState extends State<LoginScreen> {
     });
     try {
       await widget.auth.login(_email.text.trim(), _password.text);
-      // No further navigation needed — main.dart swaps `home:` to the real
-      // app the moment AuthController.state flips to AuthSignedIn.
+      // main.dart's `home:` already swapped to the real app the moment
+      // AuthController.state flipped to AuthSignedIn — but only the ROOT
+      // route picks that up automatically. If this screen was reached via a
+      // push (e.g. SignupScreen's "Log in instead?" link), it's sitting on
+      // top of the stack and needs popping so the already-updated root
+      // becomes visible. A no-op when this screen already is the root.
+      if (!mounted) return;
+      Navigator.of(context).popUntil((route) => route.isFirst);
     } on AuthFailure catch (e) {
       if (!mounted) return;
       setState(() => _banner = e.message);
